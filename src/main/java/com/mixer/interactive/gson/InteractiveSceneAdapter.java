@@ -76,6 +76,6 @@ public class InteractiveSceneAdapter implements JsonDeserializer<InteractiveScen
             }
         }
 
-        return new InteractiveScene(sceneID, etag, groups, controls);
+        return new InteractiveScene(sceneID, etag, groups, controls).setMeta((JsonObject) jsonObject.get("meta"));
     }
 }

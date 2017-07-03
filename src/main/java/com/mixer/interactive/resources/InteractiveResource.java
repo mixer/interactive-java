@@ -78,6 +78,21 @@ public abstract class InteractiveResource <T extends InteractiveResource<T>> imp
     }
 
     /**
+     * Sets the Json object holding the map of meta properties.
+     *
+     * @param   meta
+     *          Json object holding the map of meta properties
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   1.0.0
+     */
+    public T setMeta(JsonObject meta) {
+        this.meta = meta;
+        return getThis();
+    }
+
+    /**
      * Adds a meta property to the meta property map object. If there already exists a meta property with the specified
      * key, it's value is overwritten.
      *
