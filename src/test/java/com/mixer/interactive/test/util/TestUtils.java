@@ -37,6 +37,18 @@ public class TestUtils {
     private static final String PROPERTY_KEY_EMPTY_PROJECT_VERSION = "emptyProjectVersion";
 
     /**
+     * Property key for retrieving the <code>projectVersion</code> setting for an empty Interactive integration from the
+     * property file
+     */
+    private static final String PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION = "singleSceneProjectVersion";
+
+    /**
+     * Property key for retrieving the <code>projectVersion</code> setting for an empty Interactive integration from the
+     * property file
+     */
+    private static final String PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION = "multiSceneProjectVersion";
+
+    /**
      * Property key for retrieving the <code>oauthToken</code> setting from the property file
      */
     private static final String PROPERTY_KEY_OAUTH_TOKEN = "oauthToken";
@@ -57,39 +69,46 @@ public class TestUtils {
     public static final int EMPTY_INTERACTIVE_PROJECT;
 
     /**
+     * Project version ID for an Interactive integration with a single scene, populated with controls
+     */
+    public static final int SINGLE_SCENE_INTERACTIVE_PROJECT;
+
+    /**
+     * Project version ID for an Interactive integration with multiple scenes, populated with controls
+     */
+    public static final int MULTIPLE_SCENES_INTERACTIVE_PROJECT;
+
+    /**
      * OAuth Bearer token
      */
     public static final String OAUTH_BEARER_TOKEN;
 
     static {
-        File propertyFile;
         URL propertyFileURL = ClassLoader.getSystemClassLoader().getResource(PROPERTY_FILE_NAME);
+        JsonElement jsonElement = null;
 
         if (propertyFileURL != null) {
-            propertyFile = new File(propertyFileURL.getFile());
-
-            JsonElement jsonElement = null;
+            File propertyFile = new File(propertyFileURL.getFile());
             try (JsonReader jsonReader = new JsonReader(new FileReader(propertyFile))) {
                 jsonElement = new JsonParser().parse(jsonReader);
             }
             catch (IOException e) {
                 e.printStackTrace();
             }
+        }
 
-            if (jsonElement != null) {
-                TEST_LOCAL = ((JsonObject) jsonElement).get(PROPERTY_KEY_TEST_LOCAL).getAsBoolean();
-                EMPTY_INTERACTIVE_PROJECT = ((JsonObject) jsonElement).get(PROPERTY_KEY_EMPTY_PROJECT_VERSION).getAsInt();
-                OAUTH_BEARER_TOKEN = ((JsonObject) jsonElement).get(PROPERTY_KEY_OAUTH_TOKEN).getAsString();
-            }
-            else {
-                TEST_LOCAL = true;
-                EMPTY_INTERACTIVE_PROJECT = 1000;
-                OAUTH_BEARER_TOKEN = "foo";
-            }
+        if (jsonElement != null) {
+            TEST_LOCAL = ((JsonObject) jsonElement).get(PROPERTY_KEY_TEST_LOCAL).getAsBoolean();
+            EMPTY_INTERACTIVE_PROJECT = ((JsonObject) jsonElement).get(PROPERTY_KEY_EMPTY_PROJECT_VERSION).getAsInt();
+            SINGLE_SCENE_INTERACTIVE_PROJECT = ((JsonObject) jsonElement).get(PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION).getAsInt();
+            MULTIPLE_SCENES_INTERACTIVE_PROJECT = ((JsonObject) jsonElement).get(PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION).getAsInt();
+            OAUTH_BEARER_TOKEN = ((JsonObject) jsonElement).get(PROPERTY_KEY_OAUTH_TOKEN).getAsString();
         }
         else {
             TEST_LOCAL = true;
             EMPTY_INTERACTIVE_PROJECT = 1000;
+            SINGLE_SCENE_INTERACTIVE_PROJECT = 1001;
+            MULTIPLE_SCENES_INTERACTIVE_PROJECT = 1002;
             OAUTH_BEARER_TOKEN = "foo";
         }
     }

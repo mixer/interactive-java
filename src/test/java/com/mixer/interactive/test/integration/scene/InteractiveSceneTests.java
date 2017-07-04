@@ -1,0 +1,418 @@
+package com.mixer.interactive.test.integration.scene;
+
+import com.google.gson.JsonObject;
+import com.mixer.interactive.GameClient;
+import com.mixer.interactive.exception.InteractiveException;
+import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
+import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
+import com.mixer.interactive.resources.control.ButtonControl;
+import com.mixer.interactive.resources.control.InteractiveControl;
+import com.mixer.interactive.resources.scene.InteractiveScene;
+import com.mixer.interactive.test.util.TestEventHandler;
+import com.mixer.interactive.util.EndpointUtil;
+import org.junit.*;
+import org.junit.runners.MethodSorters;
+
+import java.net.URI;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static com.mixer.interactive.test.util.TestUtils.*;
+
+/**
+ * Tests <code>InteractiveScene</code> create/update/delete operations to the Interactive service.
+ *
+ * @author      Microsoft Corporation
+ *
+ * @since       1.0.0
+ */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+public class InteractiveSceneTests {
+
+    /**
+     * URI for Interactive host being tested against
+     */
+    private static URI interactiveHost;
+
+    /**
+     * <code>GameClient</code> that connects to an Interactive integration that contains the default scene with no
+     * controls
+     */
+    private static GameClient emptyGameClient;
+
+    /**
+     * <code>GameClient</code> that connects to an Interactive integration that contains the default scene with controls
+     */
+    private static GameClient singleSceneGameClient;
+
+    /**
+     * <code>GameClient</code> that connects to an Interactive integration that contains multiple scenes that all
+     * contain controls
+     */
+    private static GameClient multiSceneGameClient;
+
+    @BeforeClass
+    public static void setup() throws InteractiveNoHostsFoundException {
+        interactiveHost = INTERACTIVE_LOCALHOST;
+        if (!TEST_LOCAL) {
+            interactiveHost = EndpointUtil.getInteractiveHost().getAddress();
+        }
+    }
+
+    @Before
+    public void setupGameClient() {
+        emptyGameClient = new GameClient(EMPTY_INTERACTIVE_PROJECT);
+        singleSceneGameClient = new GameClient(SINGLE_SCENE_INTERACTIVE_PROJECT);
+        multiSceneGameClient = new GameClient(MULTIPLE_SCENES_INTERACTIVE_PROJECT);
+
+        emptyGameClient.getEventBus().register(TestEventHandler.HANDLER);
+        singleSceneGameClient.getEventBus().register(TestEventHandler.HANDLER);
+        multiSceneGameClient.getEventBus().register(TestEventHandler.HANDLER);
+    }
+
+    @After
+    public void teardownGameClient() {
+        TestEventHandler.HANDLER.clear();
+
+        emptyGameClient.disconnect();
+        singleSceneGameClient.disconnect();
+        multiSceneGameClient.disconnect();
+
+        emptyGameClient = null;
+        singleSceneGameClient = null;
+        multiSceneGameClient = null;
+    }
+
+    // GameClient#getScenes
+    @Test
+    public void getScenes_valid_single_scene_project() {
+        try {
+            singleSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            Set<InteractiveScene> scenes = singleSceneGameClient.getScenes();
+            Assert.assertEquals("Only one scene exists", 1, scenes.size());
+            Assert.assertEquals("Only the default scene exists", "default", scenes.iterator().next().getSceneID());
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void getScenes_valid_multiple_scene_project() {
+        try {
+            multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            Set<String> actual = multiSceneGameClient.getScenes().stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
+            Set<String> expected = new HashSet<>(Arrays.asList("default", "scene-1", "scene-2"));
+            Assert.assertEquals("Only the expected scenes exist", expected, actual);
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    // GameClient#createScenes
+    @Test
+    public void createScenes_valid_empty_scene() {
+        try {
+            emptyGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            emptyGameClient.createScenes(new InteractiveScene("test-scene"));
+            Set<String> actual = emptyGameClient.getScenes().stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
+            Set<String> expected = new HashSet<>(Arrays.asList("default", "test-scene"));
+            Assert.assertEquals("Only the expected scenes exist", expected, actual);
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void createScenes_valid_etag_specified() {
+        try {
+            emptyGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            String etag = UUID.randomUUID().toString();
+            emptyGameClient.createScenes(new InteractiveScene("test-scene", etag, null, null));
+            Set<InteractiveScene> actualScenes = emptyGameClient.getScenes();
+            Set<String> actualSceneIDs = actualScenes.stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
+            Set<String> expectedSceneIDs = new HashSet<>(Arrays.asList("default", "test-scene"));
+            Assert.assertEquals("Only the expected scenes exist", expectedSceneIDs, actualSceneIDs);
+
+            int scenesFound = 0;
+            for (InteractiveScene scene : actualScenes) {
+                if ("test-scene".equals(scene.getSceneID())) {
+                    scenesFound++;
+                    Assert.assertEquals("Scene has specified etag", etag, scene.getEtag());
+                }
+            }
+            Assert.assertEquals("Only one scene matched", 1, scenesFound);
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void createScenes_valid_multiple_scenes() {
+        try {
+            emptyGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            emptyGameClient.createScenes(new InteractiveScene("test-scene-1"), new InteractiveScene("test-scene-2"), new InteractiveScene("test-scene-3"));
+            Set<String> actual = emptyGameClient.getScenes().stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
+            Set<String> expected = new HashSet<>(Arrays.asList("default", "test-scene-1", "test-scene-2", "test-scene-3"));
+            Assert.assertEquals(expected, actual);
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void createScenes_valid_scene_with_controls() {
+        try {
+            emptyGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            InteractiveScene scene = new InteractiveScene("test-scene");
+            scene.addControls(new ButtonControl("test-button-1"), new ButtonControl("test-button-2"));
+            Set<InteractiveScene> createdScenes = emptyGameClient.createScenes(scene);
+
+            // Test scene was created
+            Assert.assertEquals("Only one scene was created", 1, createdScenes.size());
+            Assert.assertEquals("Only the expect scene was created", "test-scene", createdScenes.iterator().next().getSceneID());
+
+            // Test scenes are what we expect
+            Set<InteractiveScene> actualScenes = emptyGameClient.getScenes();
+            Set<String> actualSceneIDs = actualScenes.stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
+            Set<String> expectedSceneIDs = new HashSet<>(Arrays.asList("default", "test-scene"));
+            Assert.assertEquals(expectedSceneIDs, actualSceneIDs);
+
+            // Test controls were created as expected
+            InteractiveScene createdScene = createdScenes.iterator().next();
+            Set<String> createdControlIDs = createdScene.getControls().stream().map(InteractiveControl::getControlID).collect(Collectors.toSet());
+            Set<String> expectedControlIDs = new HashSet<>(Arrays.asList("test-button-1", "test-button-2"));
+            Assert.assertEquals(expectedControlIDs, createdControlIDs);
+
+            Set<String> createdControlSceneIDs = createdScene.getControls().stream().map(InteractiveControl::getSceneID).collect(Collectors.toSet());
+            Set<String> expectedControlSceneIDs = new HashSet<>(Arrays.asList("test-scene"));
+            Assert.assertEquals(expectedControlSceneIDs, createdControlSceneIDs);
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void createScens_invalid_default_scene() {
+        try {
+            emptyGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            emptyGameClient.createScenes(new InteractiveScene("default"));
+            Assert.fail();
+        }
+        catch (InteractiveReplyWithErrorException e) {
+            Assert.assertEquals("Cannot create a duplicate of the default scene", 4011, e.getError().getErrorCode());
+        }
+        catch (InteractiveException e) {
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void createScenes_invalid_scene_already_exists() {
+        try {
+            emptyGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            emptyGameClient.createScenes(new InteractiveScene("test-scene"), new InteractiveScene("test-scene"));
+            Assert.fail();
+        }
+        catch (InteractiveReplyWithErrorException e) {
+            Assert.assertEquals("Cannot create a duplicate scene", 4011, e.getError().getErrorCode());
+        }
+        catch (InteractiveException e) {
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void createScenes_invalid_control_already_exists() {
+        try {
+            emptyGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            InteractiveScene scene = new InteractiveScene("test-scene").addControls(new ButtonControl("test-button-1"), new ButtonControl("test-button-1"));
+            emptyGameClient.createScenes(scene);
+            Assert.fail();
+        }
+        catch (InteractiveReplyWithErrorException e) {
+            Assert.assertEquals("Cannot create scene with duplicate controls", 4013, e.getError().getErrorCode());
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    // GameClient#updateScenes
+    @Test
+    public void updateScenes_valid_add_meta() {
+        try {
+            emptyGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            InteractiveScene defaultScene = emptyGameClient.getScenes().iterator().next();
+            defaultScene.addMetaProperty("awesome_property", "awesome_value");
+            Set<InteractiveScene> updatedScenes = emptyGameClient.updateScenes(defaultScene);
+
+            Assert.assertEquals(1, updatedScenes.size());
+            Assert.assertEquals("default", updatedScenes.iterator().next().getSceneID());
+
+            InteractiveScene updatedScene = updatedScenes.iterator().next();
+            Assert.assertNotEquals("Updated scene has a new etag", defaultScene.getEtag(), updatedScene.getEtag());
+            Assert.assertNotEquals("Updated scene has different meta properties than before", defaultScene.getMeta(), updatedScene.getMeta());
+            Assert.assertEquals("Updated scene has the new meta property", "awesome_value", updatedScene.getMeta().get("awesome_property").getAsJsonObject().get("value").getAsString());
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void updateScenes_invalid_non_existent_scene() {
+        try {
+            singleSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            singleSceneGameClient.updateScenes(new InteractiveScene("banana-scene"));
+            Assert.fail();
+        }
+        catch (InteractiveReplyWithErrorException e) {
+            Assert.assertEquals("Cannot update non-existent scene", 4010, e.getError().getErrorCode());
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void updateScenes_invalid_one_scene_fails_update() {
+        try {
+            multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            Set<InteractiveScene> scenes = multiSceneGameClient.getScenes();
+            scenes.stream()
+                    .filter(scene -> "default".equals(scene.getSceneID()))
+                    .forEach(scene -> scene.addMetaProperty("awesome_property", "awesome_value"));
+            scenes.stream()
+                    .filter(scene -> "scene-1".equals(scene.getSceneID()))
+                    .forEach(scene -> {
+                        JsonObject metaObject = new JsonObject();
+                        metaObject.addProperty("bad_property", "bad_value");
+                        scene.setMeta(metaObject);
+                    });
+            multiSceneGameClient.updateScenes(scenes);
+        }
+        catch (InteractiveReplyWithErrorException e) {
+            Assert.assertEquals("Cannot pass invalid json", 4000, e.getError().getErrorCode());
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+
+        try {
+            Set<InteractiveScene> existingScenes = multiSceneGameClient.getScenes();
+            Assert.assertEquals("Only three scenes exist", 3, existingScenes.size());
+            existingScenes.stream()
+                    .filter(scene -> "default".equals(scene.getSceneID()))
+                    .forEach(scene -> Assert.assertEquals("Default scene did not get new meta properties", null, scene.getMeta()));
+            existingScenes.stream()
+                    .filter(scene -> "scene-1".equals(scene.getSceneID()))
+                    .forEach(scene -> Assert.assertEquals("'scene-1' did not get new meta properties", null, scene.getMeta()));
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    // GameClient#deleteScene
+    @Test
+    public void deleteScene_valid_default_reassignment() {
+        try {
+            multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            multiSceneGameClient.deleteScene("scene-1");
+
+            Set<InteractiveScene> actualScenes = multiSceneGameClient.getScenes();
+            Set<String> actualSceneIDs = actualScenes.stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
+            Set<String> expectedSceneIDs = new HashSet<>(Arrays.asList("default", "scene-2"));
+            Assert.assertEquals(expectedSceneIDs, actualSceneIDs);
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void deleteScene_valid_reassign_to_default() {
+        try {
+            multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            multiSceneGameClient.deleteScene("scene-1", "default");
+
+            Set<InteractiveScene> actualScenes = multiSceneGameClient.getScenes();
+            Set<String> actualSceneIDs = actualScenes.stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
+            Set<String> expectedSceneIDs = new HashSet<>(Arrays.asList("default", "scene-2"));
+            Assert.assertEquals(expectedSceneIDs, actualSceneIDs);
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void deleteScene_valid_delete_empty_scene() {
+        try {
+            multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            multiSceneGameClient.deleteScene("scene-2", "default");
+
+            Set<InteractiveScene> actualScenes = multiSceneGameClient.getScenes();
+            Set<String> actualSceneIDs = actualScenes.stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
+            Set<String> expectedSceneIDs = new HashSet<>(Arrays.asList("default", "scene-1"));
+            Assert.assertEquals(expectedSceneIDs, actualSceneIDs);
+        }
+        catch (InteractiveException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void deleteScene_invalid_delete_default_scene() {
+        try {
+            multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            multiSceneGameClient.deleteScene("default");
+            Assert.fail();
+        }
+        catch (InteractiveReplyWithErrorException e) {
+            Assert.assertEquals("Cannot delete the default scene", 4018, e.getError().getErrorCode());
+        }
+        catch (InteractiveException e) {
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void deleteScene_invalid_reassign_to_non_existent_scene() {
+        try {
+            multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            multiSceneGameClient.deleteScene("scene-1", "scene-banana");
+            Assert.fail();
+        }
+        catch (InteractiveReplyWithErrorException e) {
+            Assert.assertEquals("Cannot reassign groups to a non-existent scene", 4010, e.getError().getErrorCode());
+        }
+        catch (InteractiveException e) {
+            Assert.fail();
+        }
+    }
+
+    @Test
+    public void deleteScene_invalid_reassign_to_same_scene() {
+        try {
+            multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
+            multiSceneGameClient.deleteScene("scene-1", "scene-1");
+            Assert.fail();
+        }
+        catch (InteractiveReplyWithErrorException e) {
+            Assert.assertEquals("Cannot reassign groups to the scene that was just deleted", 4010, e.getError().getErrorCode());
+        }
+        catch (InteractiveException e) {
+            Assert.fail();
+        }
+    }
+}

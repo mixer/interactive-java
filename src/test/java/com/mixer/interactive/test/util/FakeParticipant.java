@@ -1,6 +1,7 @@
 package com.mixer.interactive.test.util;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.SerializedName;
 import com.mixer.interactive.GameClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,17 +30,20 @@ public class FakeParticipant {
     /**
      * User id for the fake participant
      */
-    private final int ID;
+    @SerializedName("ID")
+    private final int id;
 
     /**
      * Username for the fake participant
      */
-    private final String Username;
+    @SerializedName("Username")
+    private final String username;
 
     /**
      * XP level for the fake participant
      */
-    private final int XP;
+    @SerializedName("XP")
+    private final int xp;
 
     /**
      * Initializes a new <code>FakeParticipant</code>.
@@ -53,9 +57,9 @@ public class FakeParticipant {
      * @since   1.0.0
      */
     private FakeParticipant(int id, String username, int xp) {
-        this.ID = id;
-        this.Username = username;
-        this.XP = xp;
+        this.id = id;
+        this.username = username;
+        this.xp = xp;
     }
 
     /**
@@ -88,9 +92,9 @@ public class FakeParticipant {
     @Override
     public String toString() {
         return Objects.toStringHelper(this)
-                .add("ID", ID)
-                .add("Username", Username)
-                .add("XP", XP)
+                .add("id", id)
+                .add("username", username)
+                .add("xp", xp)
                 .toString();
     }
 }
