@@ -37,7 +37,7 @@ import com.mixer.interactive.util.compression.CompressionUtil;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft_17;
+import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.io.IOException;
@@ -157,7 +157,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      * @since   1.0.0
      */
     private InteractiveWebSocketClient(GameClient gameClient, URI uri, Map<String, String> httpHeaders) {
-        super(uri, new Draft_17(), httpHeaders, (int) TimeUnit.SECONDS.toMillis(15));
+        super(uri, new Draft_6455(), httpHeaders, (int) TimeUnit.SECONDS.toMillis(15));
         this.gameClient = gameClient;
     }
 
