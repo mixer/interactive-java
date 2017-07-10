@@ -6,6 +6,8 @@ import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
 
+import static com.mixer.interactive.GameClient.TRANSACTION_SERVICE_PROVIDER;
+
 /**
  * A <code>InteractiveTransaction</code> represents a Spark transaction on the Interactive service.
  *
@@ -59,7 +61,9 @@ public class InteractiveTransaction {
      * @since   1.0.0
      */
     public boolean capture(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        return gameClient != null ? gameClient.capture(transactionID) : false;
+        return gameClient != null
+                ? gameClient.using(TRANSACTION_SERVICE_PROVIDER).capture(transactionID)
+                : false;
     }
 
     /**
@@ -74,6 +78,8 @@ public class InteractiveTransaction {
      * @since   1.0.0
      */
     public ListenableFuture<Boolean> captureAsync(GameClient gameClient) {
-        return gameClient != null ? gameClient.captureAsync(transactionID) : Futures.immediateFuture(false);
+        return gameClient != null
+                ? gameClient.using(TRANSACTION_SERVICE_PROVIDER).captureAsync(transactionID)
+                : Futures.immediateFuture(false);
     }
 }

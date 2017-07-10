@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static com.mixer.interactive.GameClient.SCENE_SERVICE_PROVIDER;
+
 /**
  * A <code>InteractiveScene</code> represents a scene resource on the Interactive service.
  *
@@ -380,7 +382,7 @@ public class InteractiveScene
     @Override
     public InteractiveScene create(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null) {
-            syncIfEqual(gameClient.createScenes(this));
+            syncIfEqual(gameClient.using(SCENE_SERVICE_PROVIDER).createScenes(this));
         }
         return getThis();
     }
@@ -400,7 +402,7 @@ public class InteractiveScene
     @Override
     public ListenableFuture<InteractiveScene> createAsync(GameClient gameClient) {
         return (gameClient != null)
-                ? Futures.transform(gameClient.createScenesAsync(this), (AsyncFunction<Set<InteractiveScene>, InteractiveScene>) createdScenes -> Futures.immediateFuture(syncIfEqual(createdScenes)))
+                ? Futures.transform(gameClient.using(SCENE_SERVICE_PROVIDER).createScenesAsync(this), (AsyncFunction<Set<InteractiveScene>, InteractiveScene>) createdScenes -> Futures.immediateFuture(syncIfEqual(createdScenes)))
                 : Futures.immediateFuture(getThis());
     }
 
@@ -424,7 +426,7 @@ public class InteractiveScene
     @Override
     public InteractiveScene update(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null) {
-            syncIfEqual(gameClient.updateScenes(this));
+            syncIfEqual(gameClient.using(SCENE_SERVICE_PROVIDER).updateScenes(this));
         }
         return getThis();
     }
@@ -444,7 +446,7 @@ public class InteractiveScene
     @Override
     public ListenableFuture<InteractiveScene> updateAsync(GameClient gameClient) {
         return (gameClient != null)
-                ? Futures.transform(gameClient.updateScenesAsync(this), (AsyncFunction<Set<InteractiveScene>, InteractiveScene>) updatedScenes -> Futures.immediateFuture(syncIfEqual(updatedScenes)))
+                ? Futures.transform(gameClient.using(SCENE_SERVICE_PROVIDER).updateScenesAsync(this), (AsyncFunction<Set<InteractiveScene>, InteractiveScene>) updatedScenes -> Futures.immediateFuture(syncIfEqual(updatedScenes)))
                 : Futures.immediateFuture(getThis());
     }
 
@@ -486,27 +488,8 @@ public class InteractiveScene
      */
     public void delete(GameClient gameClient, String reassignSceneID) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null) {
-            gameClient.deleteScene(this, reassignSceneID);
+            gameClient.using(SCENE_SERVICE_PROVIDER).deleteScene(sceneID, reassignSceneID);
         }
-    }
-
-    /**
-     * Deletes <code>this</code> from the Interactive service, reassigning groups on this scene to the specified scene.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     * @param   reassignScene
-     *          The <code>InteractiveScene</code> groups will be reassigned to
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public void delete(GameClient gameClient, InteractiveScene reassignScene) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        delete(gameClient, reassignScene != null ? reassignScene.sceneID : null);
     }
 
     /**
@@ -544,25 +527,9 @@ public class InteractiveScene
      * @since   1.0.0
      */
     public ListenableFuture<Boolean> deleteAsync(GameClient gameClient, String reassignSceneID) {
-        return (gameClient != null) ? gameClient.deleteSceneAsync(this, reassignSceneID) : Futures.immediateFuture(false);
-    }
-
-    /**
-     * Asynchronously deletes <code>this</code> from the Interactive service, reassigning groups on this scene to
-     * the specified scene.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     * @param   reassignScene
-     *          The <code>InteractiveScene</code> groups will be reassigned to
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_SCENE deleteScene} method call completes with no errors
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Boolean> deleteAsync(GameClient gameClient, InteractiveScene reassignScene) {
-        return deleteAsync(gameClient, reassignScene != null ? reassignScene.getSceneID() : null);
+        return gameClient != null
+                ? gameClient.using(SCENE_SERVICE_PROVIDER).deleteSceneAsync(sceneID, reassignSceneID)
+                : Futures.immediateFuture(false);
     }
 
     /**

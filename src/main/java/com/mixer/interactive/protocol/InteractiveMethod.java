@@ -44,7 +44,8 @@ public enum InteractiveMethod {
     UPDATE_CONTROLS("updateControls"),
     UPDATE_GROUPS("updateGroups"),
     UPDATE_PARTICIPANTS("updateParticipants"),
-    UPDATE_SCENES("updateScenes");
+    UPDATE_SCENES("updateScenes"),
+    UNKNOWN(null);
 
     /**
      * Array of all <code>InteractiveMethod</code> enum values
@@ -86,7 +87,7 @@ public enum InteractiveMethod {
             }
         }
 
-        return null;
+        return UNKNOWN;
     }
 
     /**

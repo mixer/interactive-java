@@ -320,7 +320,7 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
     @Override
     public InteractiveParticipant update(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null) {
-            syncIfEqual(gameClient.updateParticipants(this));
+            syncIfEqual(gameClient.using(GameClient.PARTICIPANT_SERVICE_PROVIDER).updateParticipants(this));
         }
         return getThis();
     }
@@ -339,9 +339,12 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
      */
     @Override
     public ListenableFuture<InteractiveParticipant> updateAsync(GameClient gameClient) {
-        return (gameClient != null)
-                ? Futures.transform(gameClient.updateParticipantsAsync(this), (AsyncFunction<Set<InteractiveParticipant>, InteractiveParticipant>) updatedParticipants -> Futures.immediateFuture(syncIfEqual(updatedParticipants)))
-                : Futures.immediateFuture(getThis());
+        if (gameClient == null) {
+            Futures.immediateFuture(getThis());
+        }
+        return Futures.transform(gameClient.using(GameClient.PARTICIPANT_SERVICE_PROVIDER).updateParticipantsAsync(this),
+                (AsyncFunction<Set<InteractiveParticipant>, InteractiveParticipant>) updatedParticipants ->
+                        Futures.immediateFuture(syncIfEqual(updatedParticipants)));
     }
 
     /**

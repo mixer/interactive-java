@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
  * subject of the request.
  *
  * @author      Microsoft Corporation
+ * @author      pahimar
  *
  * @see         InteractiveMethod
  * @see         ReplyPacket
@@ -20,14 +21,14 @@ import org.apache.logging.log4j.Logger;
 public class MethodPacket extends InteractivePacket {
 
     /**
-     * Logger.
+     * Logger
      */
     private static final Logger LOG = LogManager.getLogger();
 
     /**
      * The name of the method to call on the Interactive service
      */
-    private final InteractiveMethod method;
+    private final String method;
 
     /**
      * An object of named arguments to pass as parameters to the Interactive service
@@ -86,8 +87,8 @@ public class MethodPacket extends InteractivePacket {
      *
      * @since   1.0.0
      */
-    public MethodPacket(int id, String method, JsonElement params, Boolean discard) {
-        this(id, InteractiveMethod.from(method), params, discard);
+    public MethodPacket(int id, InteractiveMethod method, JsonElement params, Boolean discard) {
+        this(id, method.toString(), params, discard);
     }
 
     /**
@@ -105,10 +106,10 @@ public class MethodPacket extends InteractivePacket {
      *
      * @since   1.0.0
      */
-    public MethodPacket(int id, InteractiveMethod method, JsonElement params, Boolean discard) {
+    public MethodPacket(int id, String method, JsonElement params, Boolean discard) {
         super(id, "method");
 
-      if (method == null) {
+        if (method == null) {
             LOG.fatal("Method name must not be null");
             throw new IllegalArgumentException("Method name must not be null");
         }
@@ -126,6 +127,17 @@ public class MethodPacket extends InteractivePacket {
      * @since   1.0.0
      */
     public InteractiveMethod getMethod() {
+        return InteractiveMethod.from(method);
+    }
+
+    /**
+     * Retrieves the method name to call on the Interactive service.
+     *
+     * @return  The method name to call on the Interactive service
+     *
+     * @since   1.0.0
+     */
+    public String getMethodName() {
         return method;
     }
 

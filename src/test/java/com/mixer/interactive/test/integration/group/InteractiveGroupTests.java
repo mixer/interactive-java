@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.mixer.interactive.GameClient.GROUP_SERVICE_PROVIDER;
 import static com.mixer.interactive.test.util.TestUtils.*;
 
 /**
@@ -67,7 +68,7 @@ public class InteractiveGroupTests {
     @Test
     public void getGroups_valid_default() {
         try {
-            Set<String> actualGroupIDs = gameClient.getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
+            Set<String> actualGroupIDs = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default"));
             Assert.assertEquals("Only the default group exists", expectedGroupIDs, actualGroupIDs);
         }
@@ -80,8 +81,8 @@ public class InteractiveGroupTests {
     @Test
     public void createGroups_valid_new_group() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1"));
-            Set<String> actualGroupIDs = gameClient.getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"));
+            Set<String> actualGroupIDs = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1"));
             Assert.assertEquals("Groups IDs are what is expected", expectedGroupIDs, actualGroupIDs);
         }
@@ -93,8 +94,8 @@ public class InteractiveGroupTests {
     @Test
     public void createGroups_valid_new_group_non_default_scene() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1", "scene-1"));
-            Set<String> actualGroupIDs = gameClient.getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1", "scene-1"));
+            Set<String> actualGroupIDs = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1"));
             Assert.assertEquals("Groups IDs are what is expected", expectedGroupIDs, actualGroupIDs);
         }
@@ -107,8 +108,8 @@ public class InteractiveGroupTests {
     public void createGroups_valid_etag_specified() {
         try {
             String etag = UUID.randomUUID().toString();
-            gameClient.createGroups(new InteractiveGroup("group-1", etag, "scene-1"));
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1", etag, "scene-1"));
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Set<String> actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1"));
             Assert.assertEquals("Groups IDs are what is expected", expectedGroupIDs, actualGroupIDs);
@@ -131,8 +132,8 @@ public class InteractiveGroupTests {
     public void createGroups_valid_new_group_with_meta() {
         try {
             InteractiveGroup group = new InteractiveGroup("group-1").addMetaProperty("awesome_key", "awesome_value");
-            gameClient.createGroups(group);
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(group);
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Set<String> actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1"));
             Assert.assertEquals("Groups IDs are what is expected", expectedGroupIDs, actualGroupIDs);
@@ -154,8 +155,8 @@ public class InteractiveGroupTests {
     @Test
     public void createGroups_valid_multiple_new_group() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"), new InteractiveGroup("group-3"));
-            Set<String> actualGroupIDs = gameClient.getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"), new InteractiveGroup("group-3"));
+            Set<String> actualGroupIDs = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1", "group-2", "group-3"));
             Assert.assertEquals("Groups IDs are what is expected", expectedGroupIDs, actualGroupIDs);
         }
@@ -167,7 +168,7 @@ public class InteractiveGroupTests {
     @Test
     public void createGroups_invalid_cannot_create_default_group() {
         try {
-            gameClient.createGroups(new InteractiveGroup("default"));
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("default"));
             Assert.fail();
         }
         catch (InteractiveReplyWithErrorException e) {
@@ -181,7 +182,7 @@ public class InteractiveGroupTests {
     @Test
     public void createGroups_invalid_cannot_create_duplicate_groups() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-1"));
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-1"));
             Assert.fail();
         }
         catch (InteractiveReplyWithErrorException e) {
@@ -203,7 +204,7 @@ public class InteractiveGroupTests {
 
         // Attempt to create groups where one group will throw an error
         try {
-            gameClient.createGroups(groupOne, groupTwo);
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(groupOne, groupTwo);
         }
         catch (InteractiveReplyWithErrorException e) {
             Assert.assertEquals("Cannot create groups when one group has an error", 4000, e.getError().getErrorCode());
@@ -214,7 +215,7 @@ public class InteractiveGroupTests {
 
         // Verify that no new groups were created
         try {
-            Set<String> actualGroupIDs = gameClient.getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
+            Set<String> actualGroupIDs = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default"));
             Assert.assertEquals("No new groups where created", expectedGroupIDs, actualGroupIDs);
         }
@@ -226,7 +227,7 @@ public class InteractiveGroupTests {
     @Test
     public void createGroups_invalid_cannot_create_group_for_nonexistent_scene() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1", "scene-banana"));
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1", "scene-banana"));
             Assert.fail();
         }
         catch (InteractiveReplyWithErrorException e) {
@@ -241,10 +242,10 @@ public class InteractiveGroupTests {
     @Test
     public void updateGroups_valid_add_meta() {
         try {
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Assert.assertEquals("At least one group exists", 1, actualGroups.size());
             InteractiveGroup group = actualGroups.iterator().next().addMetaProperty("awesome_key", "awesome_value");
-            Set<InteractiveGroup> updatedGroups = gameClient.updateGroups(group);
+            Set<InteractiveGroup> updatedGroups = gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(group);
 
             Set<String> updatedGroupIDs = updatedGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList(group.getGroupID()));
@@ -267,10 +268,10 @@ public class InteractiveGroupTests {
     @Test
     public void updateGroups_valid_change_to_existing_scene() {
         try {
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Assert.assertEquals("At least one group exists", 1, actualGroups.size());
             InteractiveGroup group = actualGroups.iterator().next().setScene("scene-1");
-            Set<InteractiveGroup> updatedGroups = gameClient.updateGroups(group);
+            Set<InteractiveGroup> updatedGroups = gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(group);
 
             Set<String> updatedGroupIDs = updatedGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList(group.getGroupID()));
@@ -293,10 +294,10 @@ public class InteractiveGroupTests {
     @Test
     public void updateScenes_invalid_change_to_non_existent_scene() {
         try {
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Assert.assertEquals("At least one group exists", 1, actualGroups.size());
             InteractiveGroup group = actualGroups.iterator().next().setScene("scene-banana");
-            gameClient.updateGroups(group);
+            gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(group);
 
             Assert.fail();
         }
@@ -311,11 +312,11 @@ public class InteractiveGroupTests {
     @Test
     public void updateScene_invalid_etag() {
         try {
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Assert.assertEquals("At least one group exists", 1, actualGroups.size());
             InteractiveGroup group = actualGroups.iterator().next().setScene("scene-1");
-            gameClient.updateGroups(group);
-            gameClient.updateGroups(group);
+            gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(group);
+            gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(group);
 
             Assert.fail();
         }
@@ -330,8 +331,8 @@ public class InteractiveGroupTests {
     @Test
     public void updateScenes_invalid_one_group_fails() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Assert.assertEquals("Number of groups matches expectation", 3, actualGroups.size());
             for (InteractiveGroup group : actualGroups) {
                 group.setScene("scene-1");
@@ -339,7 +340,7 @@ public class InteractiveGroupTests {
             JsonObject badMeta = new JsonObject();
             badMeta.addProperty("bad_key", "bad_value");
             InteractiveGroup group = actualGroups.iterator().next().setMeta(badMeta);
-            gameClient.updateGroups(actualGroups);
+            gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(actualGroups);
             Assert.fail();
         }
         catch (InteractiveReplyWithErrorException e) {
@@ -350,7 +351,7 @@ public class InteractiveGroupTests {
         }
 
         try {
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Assert.assertEquals("Number of groups matches expectation", 3, actualGroups.size());
             for (InteractiveGroup group : actualGroups) {
                 Assert.assertEquals("Scene is default", "default", group.getSceneID());
@@ -366,15 +367,15 @@ public class InteractiveGroupTests {
     @Test
     public void deleteGroup_valid_reassign_to_default() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1"));
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"));
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Set<String> actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1"));
             Assert.assertEquals("Groups matches expectation", expectedGroupIDs, actualGroupIDs);
 
-            gameClient.deleteGroup("group-1");
+            gameClient.using(GROUP_SERVICE_PROVIDER).deleteGroup("group-1");
 
-            actualGroups = gameClient.getGroups();
+            actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             expectedGroupIDs = new HashSet<>(Arrays.asList("default"));
             Assert.assertEquals("Groups matches expectation", expectedGroupIDs, actualGroupIDs);
@@ -387,15 +388,15 @@ public class InteractiveGroupTests {
     @Test
     public void deleteGroup_valid_reassign_to_non_default() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Set<String> actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1", "group-2"));
             Assert.assertEquals("Groups matches expectation", expectedGroupIDs, actualGroupIDs);
 
-            gameClient.deleteGroup("group-1", "group-2");
+            gameClient.using(GROUP_SERVICE_PROVIDER).deleteGroup("group-1", "group-2");
 
-            actualGroups = gameClient.getGroups();
+            actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-2"));
             Assert.assertEquals("Groups matches expectation", expectedGroupIDs, actualGroupIDs);
@@ -408,13 +409,13 @@ public class InteractiveGroupTests {
     @Test
     public void deleteGroup_invalid_cannot_delete_default_group() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Set<String> actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1", "group-2"));
             Assert.assertEquals("Groups matches expectation", expectedGroupIDs, actualGroupIDs);
 
-            gameClient.deleteGroup("default", "group-2");
+            gameClient.using(GROUP_SERVICE_PROVIDER).deleteGroup("default", "group-2");
 
             Assert.fail();
         }
@@ -429,13 +430,13 @@ public class InteractiveGroupTests {
     @Test
     public void deleteGroup_invalid_cannot_reassign_to_self() {
         try {
-            gameClient.createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
-            Set<InteractiveGroup> actualGroups = gameClient.getGroups();
+            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
+            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
             Set<String> actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1", "group-2"));
             Assert.assertEquals("Groups matches expectation", expectedGroupIDs, actualGroupIDs);
 
-            gameClient.deleteGroup("group-2", "group-2");
+            gameClient.using(GROUP_SERVICE_PROVIDER).deleteGroup("group-2", "group-2");
 
             Assert.fail();
         }

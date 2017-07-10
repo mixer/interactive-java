@@ -23,6 +23,10 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 
+import static com.mixer.interactive.GameClient.GROUP_SERVICE_PROVIDER;
+import static com.mixer.interactive.GameClient.PARTICIPANT_SERVICE_PROVIDER;
+import static com.mixer.interactive.GameClient.SCENE_SERVICE_PROVIDER;
+
 /**
  * A simple Interactive client example. Connects to an Interactive integration specified in the
  * <code>interactive-project.json</code> properties file. Commands are run via console input.
@@ -190,14 +194,14 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             case "getAllParticipants": {
-                                GAME_CLIENT.getAllParticipants().forEach(LOG::info);
+                                GAME_CLIENT.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants().forEach(LOG::info);
                                 break;
                             }
                             case "updateParticipants": {
                                 if (commandArguments.size() == 2) {
-                                    Set<InteractiveParticipant> participants = GAME_CLIENT.getAllParticipants();
+                                    Set<InteractiveParticipant> participants = GAME_CLIENT.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants();
                                     participants.forEach(participant -> participant.changeGroup(commandArguments.get(1)));
-                                    GAME_CLIENT.updateParticipants(participants).forEach(LOG::debug);
+                                    GAME_CLIENT.using(PARTICIPANT_SERVICE_PROVIDER).updateParticipants(participants).forEach(LOG::debug);
                                 }
                                 else {
                                     LOG.error("Usage: updateParticipants <newGroupName>");
@@ -205,7 +209,7 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             case "getGroups": {
-                                GAME_CLIENT.getGroups().forEach(LOG::info);
+                                GAME_CLIENT.using(GROUP_SERVICE_PROVIDER).getGroups().forEach(LOG::info);
                                 break;
                             }
                             case "createGroups": {
@@ -214,7 +218,7 @@ public class ExampleInteractiveClient {
                                     for (String groupID : commandArguments.subList(1, commandArguments.size())) {
                                         groups.add(new InteractiveGroup(groupID));
                                     }
-                                    GAME_CLIENT.createGroups(groups);
+                                    GAME_CLIENT.using(GROUP_SERVICE_PROVIDER).createGroups(groups);
                                 }
                                 else {
                                     LOG.error("Usage: createGroups <groupID_1> <groupID_2> ... <groupID_N>");
@@ -223,11 +227,11 @@ public class ExampleInteractiveClient {
                             }
                             case "updateGroup": {
                                 if (commandArguments.size() == 3) {
-                                    Set<InteractiveGroup> groups = GAME_CLIENT.getGroups();
+                                    Set<InteractiveGroup> groups = GAME_CLIENT.using(GROUP_SERVICE_PROVIDER).getGroups();
                                     for (InteractiveGroup group : groups) {
                                         if (group.getGroupID().equals(commandArguments.get(1))) {
                                             group.setScene(commandArguments.get(2));
-                                            GAME_CLIENT.updateGroups(group);
+                                            GAME_CLIENT.using(GROUP_SERVICE_PROVIDER).updateGroups(group);
                                             break;
                                         }
                                     }
@@ -240,10 +244,10 @@ public class ExampleInteractiveClient {
                             }
                             case "deleteGroup": {
                                 if (commandArguments.size() == 2) {
-                                    GAME_CLIENT.deleteGroup(commandArguments.get(1));
+                                    GAME_CLIENT.using(GROUP_SERVICE_PROVIDER).deleteGroup(commandArguments.get(1));
                                 }
                                 else if (commandArguments.size() == 3) {
-                                    GAME_CLIENT.deleteGroup(commandArguments.get(1), commandArguments.get(2));
+                                    GAME_CLIENT.using(GROUP_SERVICE_PROVIDER).deleteGroup(commandArguments.get(1), commandArguments.get(2));
                                 }
                                 else {
                                     LOG.error("Usage: deleteGroup <groupID> (newGroupID)");
@@ -252,7 +256,7 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             case "getScenes": {
-                                GAME_CLIENT.getScenes().forEach(LOG::info);
+                                GAME_CLIENT.using(SCENE_SERVICE_PROVIDER).getScenes().forEach(LOG::info);
                                 break;
                             }
                             case "createScenes": {
@@ -267,7 +271,7 @@ public class ExampleInteractiveClient {
                                                         .moveTo(10, 10)));
                                         scenes.add(scene);
                                     }
-                                    GAME_CLIENT.createScenes(scenes);
+                                    GAME_CLIENT.using(SCENE_SERVICE_PROVIDER).createScenes(scenes);
                                 }
                                 else {
                                     LOG.error("Usage: createScenes <sceneID_1> <sceneID_2> ... <sceneID_N>");
@@ -276,7 +280,7 @@ public class ExampleInteractiveClient {
                             }
                             case "updateScenes": {
                                 if (commandArguments.size() >= 2) {
-                                    Set<InteractiveScene> scenes = GAME_CLIENT.getScenes();
+                                    Set<InteractiveScene> scenes = GAME_CLIENT.using(SCENE_SERVICE_PROVIDER).getScenes();
                                     for (InteractiveScene scene : scenes) {
                                         for (String sceneID : commandArguments.subList(1, commandArguments.size())) {
                                             if (scene.getSceneID().equals(sceneID)) {
@@ -288,7 +292,7 @@ public class ExampleInteractiveClient {
                                             }
                                         }
                                     }
-                                    GAME_CLIENT.updateScenes(scenes);
+                                    GAME_CLIENT.using(SCENE_SERVICE_PROVIDER).updateScenes(scenes);
                                 }
                                 else {
                                     LOG.error("Usage: updateScene <sceneID>");
@@ -297,10 +301,10 @@ public class ExampleInteractiveClient {
                             }
                             case "deleteScene": {
                                 if (commandArguments.size() == 2) {
-                                    GAME_CLIENT.deleteScene(commandArguments.get(1));
+                                    GAME_CLIENT.using(SCENE_SERVICE_PROVIDER).deleteScene(commandArguments.get(1));
                                 }
                                 else if (commandArguments.size() == 3) {
-                                    GAME_CLIENT.deleteScene(commandArguments.get(1), commandArguments.get(2));
+                                    GAME_CLIENT.using(SCENE_SERVICE_PROVIDER).deleteScene(commandArguments.get(1), commandArguments.get(2));
                                 }
                                 else {
                                     LOG.error("Usage: deleteScene <sceneID> (newSceneID)");

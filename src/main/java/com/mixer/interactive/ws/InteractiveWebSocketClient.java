@@ -48,6 +48,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A websocket client designed specifically for use with the Interactive service. Messages received are posted to the
@@ -55,6 +56,7 @@ import java.util.concurrent.TimeUnit;
  * in the current compression scheme set for the client.
  *
  * @author      Microsoft Corporation
+ * @author      pahimar
  *
  * @since       1.0.0
  */
@@ -93,7 +95,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     /**
      * The next available packet id
      */
-    private int nextPacketId = 0;
+    private AtomicInteger nextPacketId = new AtomicInteger(0);
 
     /**
      * Initialize a new <code>InteractiveWebSocketClient</code>.
@@ -180,8 +182,8 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      *
      * @since   1.0.0
      */
-    public synchronized int getNextPacketId() {
-        return nextPacketId++;
+    public int claimNextPacketId() {
+        return nextPacketId.getAndIncrement();
     }
 
     /**

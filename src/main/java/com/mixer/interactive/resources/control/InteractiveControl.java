@@ -21,6 +21,8 @@ import org.apache.logging.log4j.Logger;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static com.mixer.interactive.GameClient.CONTROL_SERVICE_PROVIDER;
+
 /**
  * The abstract class <code>InteractiveControl</code> is the superclass for all controls on the Interactive service.
  *
@@ -501,7 +503,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      */
     public T create(GameClient gameClient, String sceneID) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null && sceneID != null && !sceneID.isEmpty() && !position.isEmpty()) {
-            gameClient.createControls(sceneID, this);
+            gameClient.using(CONTROL_SERVICE_PROVIDER).createControls(sceneID, this);
         }
         return getThis();
     }
@@ -559,7 +561,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      */
     public ListenableFuture<T> createAsync(GameClient gameClient, String sceneID) {
         if (gameClient != null && sceneID != null && !sceneID.isEmpty() && !position.isEmpty()) {
-            gameClient.createControlsAsync(sceneID, this);
+            gameClient.using(CONTROL_SERVICE_PROVIDER).createControlsAsync(sceneID, this);
         }
         return Futures.immediateFuture(getThis());
     }
@@ -597,7 +599,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      */
     public T update(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null && !position.isEmpty()) {
-            Set<InteractiveControl> updatedControls = gameClient.updateControls(this.sceneID, this);
+            Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).updateControls(this.sceneID, this);
             for (InteractiveControl updatedControl : updatedControls) {
                 if (this.controlID.equals(updatedControl.controlID)) {
                     this.etag = updatedControl.etag;
@@ -620,7 +622,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      */
     public ListenableFuture<T> updateAsync(GameClient gameClient) {
         if (gameClient != null && !position.isEmpty()) {
-            return Futures.transform(gameClient.updateControlsAsync(this.sceneID, this), (AsyncFunction<Set<InteractiveControl>, T>) updatedControls -> {
+            return Futures.transform(gameClient.using(CONTROL_SERVICE_PROVIDER).updateControlsAsync(this.sceneID, this), (AsyncFunction<Set<InteractiveControl>, T>) updatedControls -> {
                 for (InteractiveControl updatedControl : updatedControls) {
                     if (InteractiveControl.this.controlID.equals(updatedControl.controlID)) {
                         InteractiveControl.this.etag = updatedControl.etag;
@@ -648,7 +650,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      */
     public void delete(GameClient gameClient) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
         if (gameClient != null) {
-            gameClient.deleteControls(this.sceneID, this);
+            gameClient.using(CONTROL_SERVICE_PROVIDER).deleteControls(this.sceneID, this);
         }
     }
 
@@ -664,7 +666,9 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      * @since   1.0.0
      */
     public ListenableFuture<Boolean> deleteAsync(GameClient gameClient) {
-        return (gameClient != null) ? gameClient.deleteControlsAsync(this.sceneID, this) : Futures.immediateFuture(false);
+        return gameClient != null
+                ? gameClient.using(CONTROL_SERVICE_PROVIDER).deleteControlsAsync(this.sceneID, this)
+                : Futures.immediateFuture(false);
     }
 
     /**

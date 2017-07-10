@@ -239,7 +239,7 @@ public class InteractiveGroup
     @Override
     public InteractiveGroup create(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null) {
-            gameClient.createGroups(this);
+            gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).createGroups(this);
         }
         return getThis();
     }
@@ -258,9 +258,11 @@ public class InteractiveGroup
      */
     @Override
     public ListenableFuture<InteractiveGroup> createAsync(GameClient gameClient) {
-        return (gameClient != null)
-                ? Futures.transform(gameClient.createGroupsAsync(this), (AsyncFunction<Boolean, InteractiveGroup>) input -> Futures.immediateFuture(getThis()))
-                : Futures.immediateFuture(getThis());
+        if (gameClient == null) {
+            return Futures.immediateFuture(getThis());
+        }
+        return Futures.transform(gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).createGroupsAsync(this),
+                (AsyncFunction<Boolean, InteractiveGroup>) input -> Futures.immediateFuture(getThis()));
     }
 
     /**
@@ -283,7 +285,7 @@ public class InteractiveGroup
     @Override
     public InteractiveGroup update(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null) {
-            syncIfEqual(gameClient.updateGroups(this));
+            syncIfEqual(gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).updateGroups(this));
         }
         return getThis();
     }
@@ -302,9 +304,12 @@ public class InteractiveGroup
      */
     @Override
     public ListenableFuture<InteractiveGroup> updateAsync(GameClient gameClient) {
-        return  (gameClient != null)
-                ? Futures.transform(gameClient.updateGroupsAsync(this), (AsyncFunction<Set<InteractiveGroup>, InteractiveGroup>) updatedGroups -> Futures.immediateFuture(syncIfEqual(updatedGroups)))
-                : Futures.immediateFuture(getThis());
+        if (gameClient == null) {
+            return Futures.immediateFuture(getThis());
+        }
+        return  Futures.transform(gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).updateGroupsAsync(this),
+                (AsyncFunction<Set<InteractiveGroup>, InteractiveGroup>) updatedGroups ->
+                        Futures.immediateFuture(syncIfEqual(updatedGroups)));
     }
 
     /**
@@ -347,28 +352,8 @@ public class InteractiveGroup
      */
     public void delete(GameClient gameClient, String reassignGroupID) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
         if (gameClient != null) {
-            gameClient.deleteGroup(this, reassignGroupID);
+            gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).deleteGroup(groupID, reassignGroupID);
         }
-    }
-
-    /**
-     * Deletes <code>this</code> from the Interactive service, reassigning participants of this group to
-     * the specified group.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     * @param   reassignGroup
-     *          The <code>InteractiveGroup</code> that <code>InteractiveParticipants</code> will be reassigned to
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public void delete(GameClient gameClient, InteractiveGroup reassignGroup) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        delete(gameClient, reassignGroup != null ? reassignGroup.getGroupID() : null);
     }
 
     /**
@@ -406,25 +391,9 @@ public class InteractiveGroup
      * @since   1.0.0
      */
     public ListenableFuture<Boolean> deleteAsync(GameClient gameClient, String reassignGroupID) {
-        return (gameClient != null) ? gameClient.deleteGroupsAsync(this, reassignGroupID) : Futures.immediateFuture(false);
-    }
-
-    /**
-     * Asynchronously deletes <code>this</code> from the Interactive service, reassigning participants of this group to
-     * the specified group.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     * @param   reassignGroup
-     *          The <code>InteractiveGroup</code> that <code>InteractiveParticipants</code> will be reassigned to
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_GROUP deleteGroup} method call completes with no errors
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Boolean> deleteAsync(GameClient gameClient, InteractiveGroup reassignGroup) {
-        return deleteAsync(gameClient, reassignGroup != null ? reassignGroup.getGroupID() : null);
+        return (gameClient != null)
+                ? gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).deleteGroupAsync(groupID, reassignGroupID)
+                : Futures.immediateFuture(false);
     }
 
     /**
