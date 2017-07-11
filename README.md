@@ -1,19 +1,19 @@
 # Mixer Interactive Java 2
 
-A Java client for [Mixer's interactive 2 Protocol](https://dev.mixer.com/reference/interactive/protocol/protocol.pdf). 
+The Java Interactivity SDK supports client-side development of application with Mixer Interactivity. The SDK implements the [Mixer interactive 2 protocol](https://dev.mixer.com/reference/interactive/protocol/protocol.pdf) specification. 
 
-For an introduction to interactive2 checkout the [reference docs](https://dev.mixer.com/reference/interactive/index.html) on the developers site.
+For an introduction to Interactive 2.0, checkout the [reference docs](https://dev.mixer.com/reference/interactive/index.html) on the developers site.
 
-## Documentation
+## Release Notes
 
-To be completed
+The `interactive-java` repository currently is in a pre-release state. Please refer to the [release notes](https://github.com/mixer/interactive-java/releases) for more information.
 
 ## Development
 
 We use [Maven](http://maven.apache.org/) to build the client.  Once you have [Maven installed](http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html), there are two easy steps to getting the
 client in your classpath.
 
-First, add the [Mixer repo](https://maven.mixer.com) to your `pom.xml` as a `<repository>` as follows:
+First add the [Mixer repo](https://maven.mixer.com) as a `<repository>` in your `pom.xml`:
 
 ```xml
 <repositories>
@@ -24,7 +24,7 @@ First, add the [Mixer repo](https://maven.mixer.com) to your `pom.xml` as a `<re
 </repositories>
 ```
 
-And secondly, add this project as a `dependency` in your `pom.xml`:
+Next, add this project as a `dependency` in your `pom.xml`:
 
 ```xml
 <dependencies>
@@ -36,15 +36,10 @@ And secondly, add this project as a `dependency` in your `pom.xml`:
 </dependencies>
 ```
 
-Once these steps are completed, you should have the client on your
-classpath, and are set to get programming!
-
-## Examples
-
-To be completed
+Once these steps are completed, you should have the client on your classpath, and are set to get programming!
 
 ## Contributing
 
-Thanks for your interested in contributing, checkout the [TODO](TODO.md) for a list of tasks!
+Is there a feature missing that you'd like to see, or have you found a bug that you have a fix for? Do you have an idea or just interest in helping out in building the library? Let us know and we'd love to work with you. For a good starting point on where we are headed and feature ideas, take a look at our [contributing](CONTRIBUTING.md) guide.
 
-Open a [Pull Request](https://github.com/WatchMixer/interactive-java/pulls), we'd love to see your contributions.
+Big or small we'd like to take your contributions to help improve the Mixer Interactivity API for everyone.
