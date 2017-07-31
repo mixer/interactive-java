@@ -56,7 +56,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * in the current compression scheme set for the client.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @since       1.0.0
  */

@@ -11,7 +11,6 @@ import org.apache.logging.log4j.Logger;
  * subject of the request.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @see         InteractiveMethod
  * @see         ReplyPacket

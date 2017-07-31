@@ -9,6 +9,7 @@ import java.util.Collection;
  * participant's group has been changed).
  *
  * @author      Microsoft Corporation
+ *
  * @since       1.0.0
  */
 public class ParticipantUpdateEvent extends ParticipantEvent {

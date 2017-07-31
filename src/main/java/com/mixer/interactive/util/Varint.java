@@ -27,6 +27,8 @@ package com.mixer.interactive.util;
  *
  * <p>Copied from <a target="_blank" href="https://github.com/addthis/stream-lib/blob/644e4e9be40e0eb69a9aef6acee6ca28643f174b/src/main/java/com/clearspring/analytics/util/Varint.java">https://github.com/addthis/stream-lib/blob/644e4e9be40e0eb69a9aef6acee6ca28643f174b/src/main/java/com/clearspring/analytics/util/Varint.java</a></p>
  *
+ * @author      unascribed
+ *
  * @since       1.0.0
  */
 public class Varint {

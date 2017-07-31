@@ -12,7 +12,6 @@ import java.util.Set;
  * A <code>ServiceManager</code> contains instances of service providers that perform some function within the client.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @since       1.0.0
  */

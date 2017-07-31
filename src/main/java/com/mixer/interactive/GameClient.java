@@ -50,7 +50,6 @@ import java.util.stream.Collectors;
  * as well as manipulate resources in the integration by making requests to the Interactive service.</p>
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @since       1.0.0
  */

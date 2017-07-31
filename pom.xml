@@ -22,6 +22,7 @@
         <java-websocket.version>1.3.4</java-websocket.version>
         <log4j2.version>2.8.2</log4j2.version>
         <junit.version>4.12</junit.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
@@ -63,16 +64,20 @@
         </dependency>
     </dependencies>
 
-    <repositories>
+    <distributionManagement>
         <repository>
-            <id>mixer-releases</id>
+            <uniqueVersion>false</uniqueVersion>
+            <id>mixer-release</id>
             <url>https://maven.mixer.com/content/repositories/releases/</url>
+            <layout>default</layout>
         </repository>
-        <repository>
-            <id>mixer-snapshots</id>
+        <snapshotRepository>
+            <uniqueVersion>false</uniqueVersion>
+            <id>mixer-snapshot</id>
             <url>https://maven.mixer.com/content/repositories/snapshots/</url>
-        </repository>
-    </repositories>
+            <layout>default</layout>
+        </snapshotRepository>
+    </distributionManagement>
 
     <build>
         <plugins>
@@ -88,6 +93,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.1</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>

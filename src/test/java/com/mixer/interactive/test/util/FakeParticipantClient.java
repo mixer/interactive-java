@@ -9,7 +9,7 @@ import com.mixer.interactive.protocol.MethodPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft_17;
+import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
 
 import java.net.URI;
@@ -58,7 +58,7 @@ public class FakeParticipantClient extends WebSocketClient {
      * @since   1.0.0
      */
     public FakeParticipantClient(int channelID, FakeParticipant fakeParticipant) {
-        super(URI.create("ws://127.0.0.1:3000/participant?channel=" + channelID), new Draft_17(), ImmutableMap.<String, String>builder()
+        super(URI.create("ws://127.0.0.1:3000/participant?channel=" + channelID), new Draft_6455(), ImmutableMap.<String, String>builder()
                 .put("X-Protocol-Version", "2.0")
                 .put("X-Auth-User", fakeParticipant.toJson())
                 .build(), (int) TimeUnit.SECONDS.toMillis(15));

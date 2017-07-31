@@ -8,7 +8,6 @@ import org.apache.logging.log4j.Logger;
  * A <code>AbstractServiceProvider</code> performs some function within the client.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @since       1.0.0
  */

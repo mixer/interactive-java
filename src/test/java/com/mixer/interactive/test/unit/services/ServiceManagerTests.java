@@ -10,7 +10,6 @@ import org.junit.Test;
  * Unit tests for <code>ServiceManager</code>.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @since       1.0.0
  */

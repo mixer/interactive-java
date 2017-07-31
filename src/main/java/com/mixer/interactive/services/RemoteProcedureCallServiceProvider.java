@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
@@ -15,6 +16,10 @@ import com.mixer.interactive.protocol.ReplyPacket;
 import com.mixer.interactive.ws.InteractiveWebSocketClient;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +31,6 @@ import java.util.concurrent.TimeUnit;
  * <code>InteractiveMethod</code> enum), <code>send</code> methods are available to accomplish this goal.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @see         InteractiveMethod
  * @see         MethodPacket
@@ -415,23 +419,115 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      */
     public ListenableFuture<ReplyPacket> sendAsync(MethodPacket requestPacket, TimeUnit timeoutUnit, long timeoutDuration) {
 
-        InteractiveWebSocketClient webSocketClient = gameClient.getWebSocketClient();
-        if (webSocketClient == null) {
-            return Futures.immediateFailedFuture(new InteractiveRequestNoReplyException(requestPacket));
+        List<ListenableFuture<ReplyPacket>> requestPromises = sendMultipleAsync(Collections.singletonList(requestPacket), timeoutUnit, timeoutDuration);
+        if (requestPromises.size() == 1) {
+            return requestPromises.get(0);
+        }
+        return Futures.immediateFailedFuture(new InteractiveRequestNoReplyException(requestPacket));
+    }
+
+    /**
+     * <p>Prepares and sends one or many requests to the Interactive service, returning a list of replies that are in
+     * the same order as the input collection.</p>
+     *
+     * <p>The result of each reply may include checked exceptions that were thrown in the event that there was a problem
+     * with the request to the Interactive service. Specifically, two types of checked exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned list.</p>
+     *
+     * @param   requestPackets
+     *          A <code>Collection</code> of <code>MethodPacket</code> representing the requests being sent
+     *
+     * @return  A <code>List</code> of <code>ListenableFutures</code> that when complete return the
+     *          <code>ReplyPacket</code> for the corresponding input <code>MethodPacket</code>. This list is in the same
+     *          order as the input collection.
+     *
+     * @since   1.0.0
+     */
+    public List<ListenableFuture<ReplyPacket>> sendMultipleAsync(Collection<MethodPacket> requestPackets) {
+        return sendMultipleAsync(requestPackets, DEFAULT_TIMEOUT_TIME_UNIT, DEFAULT_TIMEOUT_DURATION);
+    }
+
+    /**
+     * <p>Prepares and sends one or many requests to the Interactive service, returning a list of replies that are in
+     * the same order as the input collection.</p>
+     *
+     * <p>The result of each reply may include checked exceptions that were thrown in the event that there was a problem
+     * with the request to the Interactive service. Specifically, two types of checked exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned list.</p>
+     *
+     * @param   requestPackets
+     *          A <code>Collection</code> of <code>MethodPacket</code> representing the requests being sent
+     * @param   timeoutUnit
+     *          A <code>TimeUnit</code> indicating the units to be used in the timeout
+     * @param   timeoutDuration
+     *          Duration before request is considered timed out (no reply)
+     *
+     * @return  A <code>List</code> of <code>ListenableFutures</code> that when complete return the
+     *          <code>ReplyPacket</code> for the corresponding input <code>MethodPacket</code>. This list is in the same
+     *          order as the input collection.
+     *
+     * @since   1.0.0
+     */
+    public List<ListenableFuture<ReplyPacket>> sendMultipleAsync(Collection<MethodPacket> requestPackets, TimeUnit timeoutUnit, long timeoutDuration) {
+
+        if (requestPackets == null || requestPackets.isEmpty() || timeoutUnit == null || timeoutDuration < 0) {
+            return Collections.emptyList();
         }
 
-        String packetString = GameClient.GSON.toJson(requestPacket);
-        if (requestPacket.getDiscard()) {
-            webSocketClient.send(packetString);
-            return Futures.immediateFuture(null);
+        InteractiveWebSocketClient webSocketClient = gameClient.getWebSocketClient();
+        List<ListenableFuture<ReplyPacket>> requestPromises = new ArrayList<>();
+        JsonArray requestArray = new JsonArray();
+
+        for (MethodPacket requestPacket : requestPackets) {
+            // If there is no connection to the Interactive service, immediately fail the promise with an exception
+            if (webSocketClient == null) {
+                requestPromises.add(Futures.immediateFailedFuture(new InteractiveRequestNoReplyException(requestPacket)));
+                continue;
+            }
+
+            // Queue up the request
+            requestArray.add(GameClient.GSON.toJsonTree(requestPacket));
+
+            // If the request is to be discarded, do not track it. Otherwise, track it and add a listener to time it out
+            // in the event a reply is not received within the specified time frame.
+            if (requestPacket.getDiscard()) {
+                requestPromises.add(Futures.immediateFuture(null));
+            }
+            else {
+                SettableFuture<ReplyPacket> sendRequest = SettableFuture.create();
+                webSocketClient.getWaitingPromisesMap().put(requestPacket.getPacketID(), sendRequest);
+                gameClient.getExecutorService().schedule((Runnable) () -> sendRequest.setException(new InteractiveRequestNoReplyException(requestPacket)), timeoutDuration, timeoutUnit);
+                requestPromises.add(sendRequest);
+            }
         }
-        else {
-            SettableFuture<ReplyPacket> sendRequest = SettableFuture.create();
-            webSocketClient.getWaitingPromisesMap().put(requestPacket.getPacketID(), sendRequest);
-            gameClient.getExecutorService().schedule((Runnable) () -> sendRequest.setException(new InteractiveRequestNoReplyException(requestPacket)), timeoutDuration, timeoutUnit);
-            webSocketClient.send(packetString);
-            return sendRequest;
+
+        // If multiple requests are to be sent, send them as an array. Otherwise send the request as an object.
+        if (webSocketClient != null) {
+            if (requestArray.size() > 1) {
+                webSocketClient.send(GameClient.GSON.toJson(requestArray));
+            }
+            else if (requestArray.size() == 1) {
+                webSocketClient.send(GameClient.GSON.toJson(requestArray.get(0)));
+            }
         }
+
+        return requestPromises;
     }
 
     /**

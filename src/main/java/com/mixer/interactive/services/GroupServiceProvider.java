@@ -22,7 +22,6 @@ import java.util.Set;
  * regarding groups.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @see         InteractiveGroup
  *

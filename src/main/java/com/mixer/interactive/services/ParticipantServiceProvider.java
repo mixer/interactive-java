@@ -22,7 +22,6 @@ import java.util.*;
  * regarding participants.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @see         InteractiveParticipant
  *
@@ -363,7 +362,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
             if (replyPacket.getResult().isJsonObject()) {
                 JsonObject jsonResultObject = (JsonObject) replyPacket.getResult();
                 InteractiveParticipant[] partialParticipants = GameClient.GSON.fromJson(jsonResultObject.get(PARAM_KEY_PARTICIPANTS), InteractiveParticipant[].class);
-                if (partialParticipants != null) {
+                if (partialParticipants != null && partialParticipants.length > 0) {
                     Collections.addAll(participants, partialParticipants);
                     if (method == InteractiveMethod.GET_ALL_PARTICIPANTS) {
                         marker = partialParticipants[partialParticipants.length - 1].getConnectedAt();

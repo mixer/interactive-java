@@ -17,7 +17,6 @@ import static com.mixer.interactive.GameClient.RPC_SERVICE_PROVIDER;
  * regarding Spark transactions.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @see         InteractiveTransaction
  *

@@ -26,7 +26,6 @@ import static com.mixer.interactive.GameClient.RPC_SERVICE_PROVIDER;
  * regarding controls.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @see         InteractiveGroup
  *

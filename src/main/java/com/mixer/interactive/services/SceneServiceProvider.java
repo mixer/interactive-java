@@ -24,7 +24,6 @@ import static com.mixer.interactive.GameClient.RPC_SERVICE_PROVIDER;
  * regarding scenes.
  *
  * @author      Microsoft Corporation
- * @author      pahimar
  *
  * @see         InteractiveScene
  *

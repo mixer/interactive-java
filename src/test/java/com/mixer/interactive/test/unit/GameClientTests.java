@@ -4,6 +4,13 @@ import com.mixer.interactive.GameClient;
 import org.junit.Assert;
 import org.junit.Test;
 
+/**
+ * Unit tests for <code>GameClient</code>.
+ *
+ * @author      Microsoft Corporation
+ *
+ * @since       1.0.0
+ */
 public class GameClientTests {
 
     /**
