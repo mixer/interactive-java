@@ -1,4 +1,4 @@
-# Mixer Interactive Java 2 [![Build Status](https://travis-ci.com/mixer/interactive-java.svg?token=FT4zy35sVbyNkBbsNh5M&branch=chore/ci)](https://travis-ci.com/mixer/interactive-java)
+# Mixer Interactive Java 2 [![Build Status](https://travis-ci.org/mixer/interactive-java.svg?branch=master)](https://travis-ci.org/mixer/interactive-java)
 
 The Java Interactivity SDK supports client-side development of application with Mixer Interactivity. The SDK implements the [Mixer interactive 2 protocol](https://dev.mixer.com/reference/interactive/protocol/protocol.pdf) specification. 
 
