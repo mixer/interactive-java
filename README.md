@@ -18,6 +18,10 @@ First add the [Mixer repo](https://maven.mixer.com) as a `<repository>` in your 
 ```xml
 <repositories>
   <repository>
+    <id>mixer-releases</id>
+    <url>https://maven.mixer.com/content/repositories/releases/</url>
+  </repository>
+  <repository>
     <id>mixer-snapshots</id>
     <url>https://maven.mixer.com/content/repositories/snapshots/</url>
   </repository>
@@ -30,7 +34,7 @@ Next, add this project as a `dependency` in your `pom.xml`:
 <dependencies>
   <dependency>
     <groupId>com.mixer</groupId>
-    <artifactId>interactive-java</artifactId>
+    <artifactId>mixer-interactive-api</artifactId>
     <version>1.0.0-SNAPSHOT</version>
   </dependency>
 </dependencies>
