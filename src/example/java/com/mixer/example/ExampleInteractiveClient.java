@@ -23,9 +23,7 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 
-import static com.mixer.interactive.GameClient.GROUP_SERVICE_PROVIDER;
-import static com.mixer.interactive.GameClient.PARTICIPANT_SERVICE_PROVIDER;
-import static com.mixer.interactive.GameClient.SCENE_SERVICE_PROVIDER;
+import static com.mixer.interactive.GameClient.*;
 
 /**
  * A simple Interactive client example. Connects to an Interactive integration specified in the

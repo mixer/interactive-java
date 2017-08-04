@@ -6,7 +6,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
@@ -65,7 +65,6 @@ public class InteractiveGroup
     public InteractiveGroup(String groupID) {
         this(groupID, DEFAULT_GROUP);
     }
-
     /**
      * Initializes a new <code>InteractiveGroup</code>.
      *
@@ -77,22 +76,6 @@ public class InteractiveGroup
      * @since   1.0.0
      */
     public InteractiveGroup(String groupID, String sceneID) {
-        this(groupID, null, sceneID);
-    }
-
-    /**
-     * Initializes a new <code>InteractiveGroup</code>.
-     *
-     * @param   groupID
-     *          Identifier for the <code>InteractiveGroup</code>
-     * @param   etag
-     *          The etag for the <code>InteractiveGroup</code>
-     * @param   sceneID
-     *          Identifier for the <code>InteractiveScene</code> for the <code>InteractiveGroup</code>
-     *
-     * @since   1.0.0
-     */
-    public InteractiveGroup(String groupID, String etag, String sceneID) {
 
         if (groupID != null && !groupID.isEmpty()) {
             this.groupID = groupID;
@@ -101,8 +84,6 @@ public class InteractiveGroup
             LOG.fatal("GroupID must be non-null and non-empty");
             throw new IllegalArgumentException("GroupID must be non-null and non-empty");
         }
-
-        this.etag = etag;
 
         if (sceneID != null && !sceneID.isEmpty()) {
             this.sceneID = sceneID;
@@ -211,7 +192,6 @@ public class InteractiveGroup
             for (InteractiveGroup object : objects) {
                 if (this.equals(object)) {
                     this.meta = object.meta;
-                    this.etag = object.etag;
                     this.sceneID = object.sceneID;
                 }
             }
@@ -415,9 +395,8 @@ public class InteractiveGroup
     public int hashCode() {
         return Hashing.md5().newHasher()
                 .putString(groupID, StandardCharsets.UTF_8)
-                .putString(etag != null ? etag : "", StandardCharsets.UTF_8)
                 .putString(sceneID, StandardCharsets.UTF_8)
-                .putObject(meta, (Funnel<JsonObject>) (from, into) -> {
+                .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
                     if (from != null && !from.isJsonNull()) {
                         into.putString(from.toString(), StandardCharsets.UTF_8);
                     }
@@ -447,7 +426,6 @@ public class InteractiveGroup
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("groupID", groupID)
-                .add("etag", etag)
                 .add("sceneID", sceneID)
                 .add("meta", getMeta())
                 .toString();

@@ -1,6 +1,8 @@
 package com.mixer.interactive.event.core;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Interactive event posted by the Interactive service when the compression algorithm used to encode messages.

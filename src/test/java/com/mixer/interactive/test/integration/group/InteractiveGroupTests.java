@@ -15,7 +15,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.mixer.interactive.GameClient.GROUP_SERVICE_PROVIDER;
@@ -105,30 +104,6 @@ public class InteractiveGroupTests {
     }
 
     @Test
-    public void createGroups_valid_etag_specified() {
-        try {
-            String etag = UUID.randomUUID().toString();
-            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1", etag, "scene-1"));
-            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
-            Set<String> actualGroupIDs = actualGroups.stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
-            Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default", "group-1"));
-            Assert.assertEquals("Groups IDs are what is expected", expectedGroupIDs, actualGroupIDs);
-
-            int groupsFound = 0;
-            for (InteractiveGroup group : actualGroups) {
-                if ("group-1".equals(group.getGroupID())) {
-                    groupsFound++;
-                    Assert.assertEquals("Group has specified etag", etag, group.getEtag());
-                }
-            }
-            Assert.assertEquals("Only one group matched", 1, groupsFound);
-        }
-        catch (InteractiveException e) {
-            Assert.fail(e.getMessage());
-        }
-    }
-
-    @Test
     public void createGroups_valid_new_group_with_meta() {
         try {
             InteractiveGroup group = new InteractiveGroup("group-1").addMetaProperty("awesome_key", "awesome_value");
@@ -142,7 +117,7 @@ public class InteractiveGroupTests {
             for (InteractiveGroup actualGroup : actualGroups) {
                 if ("group-1".equals(actualGroup.getGroupID())) {
                     foundGroups++;
-                    Assert.assertEquals("Group has the new meta property", "awesome_value", group.getMeta().get("awesome_key").getAsJsonObject().get("value").getAsString());
+                    Assert.assertEquals("Group has the new meta property", "awesome_value", ((JsonObject) group.getMeta()).get("awesome_key").getAsJsonObject().get("value").getAsString());
                 }
             }
             Assert.assertEquals("Only the expected group had the new meta property", 1, foundGroups);
@@ -194,37 +169,6 @@ public class InteractiveGroupTests {
     }
 
     @Test
-    public void createGroups_invalid_create_group_fails_on_one_group() {
-        InteractiveGroup groupOne = new InteractiveGroup("group-1").addMetaProperty("awesome_key", "awesome_value");
-
-        InteractiveGroup groupTwo = new InteractiveGroup("group-2");
-        JsonObject badMetaObject = new JsonObject();
-        badMetaObject.addProperty("bad_key", "bad_value");
-        groupTwo.setMeta(badMetaObject);
-
-        // Attempt to create groups where one group will throw an error
-        try {
-            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(groupOne, groupTwo);
-        }
-        catch (InteractiveReplyWithErrorException e) {
-            Assert.assertEquals("Cannot create groups when one group has an error", 4000, e.getError().getErrorCode());
-        }
-        catch (InteractiveException e) {
-            Assert.fail(e.getMessage());
-        }
-
-        // Verify that no new groups were created
-        try {
-            Set<String> actualGroupIDs = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups().stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
-            Set<String> expectedGroupIDs = new HashSet<>(Arrays.asList("default"));
-            Assert.assertEquals("No new groups where created", expectedGroupIDs, actualGroupIDs);
-        }
-        catch (InteractiveException e) {
-            Assert.fail(e.getMessage());
-        }
-    }
-
-    @Test
     public void createGroups_invalid_cannot_create_group_for_nonexistent_scene() {
         try {
             gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1", "scene-banana"));
@@ -255,7 +199,7 @@ public class InteractiveGroupTests {
             for (InteractiveGroup actualGroup : updatedGroups) {
                 if (group.getGroupID().equals(actualGroup.getGroupID())) {
                     foundGroups++;
-                    Assert.assertEquals("Group has the new meta property", "awesome_value", group.getMeta().get("awesome_key").getAsJsonObject().get("value").getAsString());
+                    Assert.assertEquals("Group has the new meta property", "awesome_value", ((JsonObject) group.getMeta()).get("awesome_key").getAsJsonObject().get("value").getAsString());
                 }
             }
             Assert.assertEquals("Only the expected group had the new meta property", 1, foundGroups);
@@ -303,60 +247,6 @@ public class InteractiveGroupTests {
         }
         catch (InteractiveReplyWithErrorException e) {
             Assert.assertEquals("Cannot update group with a nonexistent scene", 4010, e.getError().getErrorCode());
-        }
-        catch (InteractiveException e) {
-            Assert.fail(e.getMessage());
-        }
-    }
-
-    @Test
-    public void updateScene_invalid_etag() {
-        try {
-            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
-            Assert.assertEquals("At least one group exists", 1, actualGroups.size());
-            InteractiveGroup group = actualGroups.iterator().next().setScene("scene-1");
-            gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(group);
-            gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(group);
-
-            Assert.fail();
-        }
-        catch (InteractiveReplyWithErrorException e) {
-            Assert.assertEquals("Etag mismatch", 4005, e.getError().getErrorCode());
-        }
-        catch (InteractiveException e) {
-            Assert.fail(e.getMessage());
-        }
-    }
-
-    @Test
-    public void updateScenes_invalid_one_group_fails() {
-        try {
-            gameClient.using(GROUP_SERVICE_PROVIDER).createGroups(new InteractiveGroup("group-1"), new InteractiveGroup("group-2"));
-            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
-            Assert.assertEquals("Number of groups matches expectation", 3, actualGroups.size());
-            for (InteractiveGroup group : actualGroups) {
-                group.setScene("scene-1");
-            }
-            JsonObject badMeta = new JsonObject();
-            badMeta.addProperty("bad_key", "bad_value");
-            InteractiveGroup group = actualGroups.iterator().next().setMeta(badMeta);
-            gameClient.using(GROUP_SERVICE_PROVIDER).updateGroups(actualGroups);
-            Assert.fail();
-        }
-        catch (InteractiveReplyWithErrorException e) {
-            Assert.assertEquals("Bad meta property check", 4000, e.getError().getErrorCode());
-        }
-        catch (InteractiveException e) {
-            Assert.fail(e.getMessage());
-        }
-
-        try {
-            Set<InteractiveGroup> actualGroups = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups();
-            Assert.assertEquals("Number of groups matches expectation", 3, actualGroups.size());
-            for (InteractiveGroup group : actualGroups) {
-                Assert.assertEquals("Scene is default", "default", group.getSceneID());
-                Assert.assertEquals("No meta property exists", null, group.getMeta());
-            }
         }
         catch (InteractiveException e) {
             Assert.fail(e.getMessage());

@@ -6,7 +6,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
@@ -19,7 +19,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import static com.mixer.interactive.GameClient.CONTROL_SERVICE_PROVIDER;
 
@@ -107,15 +110,13 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      *
      * @param   controlID
      *          Unique identifier for the <code>InteractiveControl</code>
-     * @param   etag
-     *          The etag for the <code>InteractiveControl</code>
      * @param   kind
      *          The kind of control this <code>InteractiveControl</code> is
      *
      * @since   1.0.0
      */
-    InteractiveControl(String controlID, String etag, String kind) {
-        this(controlID, etag, InteractiveControlType.from(kind));
+    InteractiveControl(String controlID, String kind) {
+        this(controlID, InteractiveControlType.from(kind));
     }
 
     /**
@@ -123,8 +124,6 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      *
      * @param   controlID
      *          Unique identifier for the <code>InteractiveControl</code>
-     * @param   etag
-     *          The etag for the <code>InteractiveControl</code>
      * @param   kind
      *          The kind of control this <code>InteractiveControl</code> is
      * @param   position
@@ -132,26 +131,8 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      *
      * @since   1.0.0
      */
-    InteractiveControl(String controlID, String etag, String kind, InteractiveControlPosition ... position) {
-        this(controlID, etag, InteractiveControlType.from(kind), position);
-    }
-
-    /**
-     * Initializes a new <code>InteractiveControl</code>.
-     *
-     * @param   controlID
-     *          Unique identifier for the <code>InteractiveControl</code>
-     * @param   etag
-     *          The etag for the <code>InteractiveControl</code>
-     * @param   kind
-     *          The kind of control this <code>InteractiveControl</code> is
-     * @param   position
-     *          An array of initial <code>InteractiveControlPosition</code> for this control
-     *
-     * @since   1.0.0
-     */
-    InteractiveControl(String controlID, String etag, InteractiveControlType kind, InteractiveControlPosition ... position) {
-        this(controlID, null, etag, kind, position);
+    InteractiveControl(String controlID, String kind, InteractiveControlPosition ... position) {
+        this(controlID, InteractiveControlType.from(kind), position);
     }
 
     /**
@@ -161,8 +142,6 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      *          Unique identifier for the <code>InteractiveControl</code>
      * @param   sceneID
      *          Unique identifier for the <code>InteractiveScene</code> that contains this control
-     * @param   etag
-     *          The etag for the <code>InteractiveControl</code>
      * @param   kind
      *          The <code>InteractiveControlType</code> of this control
      * @param   position
@@ -170,7 +149,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      *
      * @since   1.0.0
      */
-    InteractiveControl(String controlID, String sceneID, String etag, InteractiveControlType kind, InteractiveControlPosition ... position) {
+    InteractiveControl(String controlID, String sceneID, InteractiveControlType kind, InteractiveControlPosition ... position) {
 
         if (controlID != null && !controlID.isEmpty()) {
             this.controlID = controlID;
@@ -185,13 +164,6 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
         }
         else {
             this.sceneID = "default";
-        }
-
-        if (etag != null) {
-            this.etag = etag;
-        }
-        else {
-            this.etag = UUID.randomUUID().toString();
         }
 
         if (kind != null) {
@@ -602,7 +574,6 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
             Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).updateControls(this.sceneID, this);
             for (InteractiveControl updatedControl : updatedControls) {
                 if (this.controlID.equals(updatedControl.controlID)) {
-                    this.etag = updatedControl.etag;
                     return getThis();
                 }
             }
@@ -625,7 +596,6 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
             return Futures.transform(gameClient.using(CONTROL_SERVICE_PROVIDER).updateControlsAsync(this.sceneID, this), (AsyncFunction<Set<InteractiveControl>, T>) updatedControls -> {
                 for (InteractiveControl updatedControl : updatedControls) {
                     if (InteractiveControl.this.controlID.equals(updatedControl.controlID)) {
-                        InteractiveControl.this.etag = updatedControl.etag;
                         return Futures.immediateFuture(getThis());
                     }
                 }
@@ -690,12 +660,11 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
     public int hashCode() {
         return Hashing.md5().newHasher()
                 .putString(controlID, StandardCharsets.UTF_8)
-                .putString(etag != null ? etag : "", StandardCharsets.UTF_8)
                 .putString(kind.toString(), StandardCharsets.UTF_8)
                 .putBoolean(disabled)
                 .putObject(position, (Funnel<Set<InteractiveControlPosition>>) (controlPositions, into) ->
                         controlPositions.forEach(controlPosition -> into.putInt(controlPosition.hashCode())))
-                .putObject(meta, (Funnel<JsonObject>) (from, into) -> {
+                .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
                     if (from != null && !from.isJsonNull()) {
                         into.putString(from.toString(), StandardCharsets.UTF_8);
                     }
@@ -726,7 +695,6 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
         return Objects.toStringHelper(this)
                 .add("controlID", getControlID())
                 .add("sceneID", getSceneID())
-                .add("etag", getEtag())
                 .add("kind", getKind())
                 .add("disabled", isDisabled())
                 .add("position", getPositions())

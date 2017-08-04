@@ -22,14 +22,9 @@ import java.util.Collection;
 public abstract class InteractiveResource <T extends InteractiveResource<T>> implements IInteractiveUpdatable<T> {
 
     /**
-     * The etag for the resource
-     */
-    protected String etag;
-
-    /**
      * Json object holding the map of meta properties
      */
-    protected JsonObject meta;
+    protected JsonElement meta;
 
     /**
      * Returns <code>this</code> as an instance of the specified generic. Utilizes the
@@ -56,17 +51,6 @@ public abstract class InteractiveResource <T extends InteractiveResource<T>> imp
     public abstract T syncIfEqual(Collection<? extends T> objects);
 
     /**
-     * Returns the etag for this resource.
-     *
-     * @return  The etag for this resource
-     *
-     * @since   1.0.0
-     */
-    public String getEtag() {
-        return etag;
-    }
-
-    /**
      * Returns the Json object holding the map of meta properties.
      *
      * @return  Json object holding the map of meta properties
@@ -74,7 +58,10 @@ public abstract class InteractiveResource <T extends InteractiveResource<T>> imp
      * @since   1.0.0
      */
     public JsonObject getMeta() {
-        return meta;
+        if (meta instanceof JsonObject) {
+            return (JsonObject) meta;
+        }
+        return null;
     }
 
     /**
@@ -106,25 +93,26 @@ public abstract class InteractiveResource <T extends InteractiveResource<T>> imp
      * @since   1.0.0
      */
     public T addMetaProperty(String key, Object value) {
-        if (meta == null) {
+        if (!(meta instanceof JsonObject)) {
             meta = new JsonObject();
         }
 
-        JsonObject metaObject;
-        if (meta.has(key)) {
-            metaObject = meta.get(key).getAsJsonObject();
+        JsonObject metaObject = (JsonObject) meta;
+        JsonObject propertyObject;
+        if (metaObject.has(key)) {
+            propertyObject = metaObject.get(key).getAsJsonObject();
         }
         else {
-            metaObject = new JsonObject();
+            propertyObject = new JsonObject();
         }
 
         if (value instanceof JsonElement) {
-            metaObject.add("value", (JsonElement) value);
+            propertyObject.add("value", (JsonElement) value);
         }
         else {
-            metaObject.add("value", GameClient.GSON.toJsonTree(value));
+            propertyObject.add("value", GameClient.GSON.toJsonTree(value));
         }
-        meta.add(key, metaObject);
+        metaObject.add(key, propertyObject);
         return getThis();
     }
 }

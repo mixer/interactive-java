@@ -11,7 +11,8 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Utility class to query for Interactive hosts from the host endpoint.

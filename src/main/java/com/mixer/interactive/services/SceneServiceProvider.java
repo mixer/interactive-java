@@ -49,6 +49,7 @@ public class SceneServiceProvider extends AbstractServiceProvider {
     /**
      * Collection of parameter key names for various method calls and events
      */
+    private static final String PARAM_UPDATE_PRIORITY = "priority";
     private static final String PARAM_KEY_SCENES = "scenes";
     private static final String PARAM_KEY_SCENE_ID = "sceneID";
     private static final String PARAM_KEY_REASSIGN_SCENE_ID = "reassignSceneID";
@@ -112,12 +113,12 @@ public class SceneServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * <p>Creates one or more new scenes. Scene IDs MUST be unique and not already exist in the Interactive integration.
-     * Initial etags for the scenes may be provided.</p>
+     * <p>Creates one or more new scenes. Scene IDs MUST be unique and not already exist in the Interactive
+     * integration.</p>
      *
      * <p>Scene objects may also optionally include controls to be set on the scene initially, rather than requiring
      * further {@link InteractiveMethod#CREATE_CONTROLS} calls. If an initial set of controls are provided, they
-     * MUST be fully-qualified, tagged control objects; the etags provided will be used as their initial values.</p>
+     * MUST be fully-qualified, tagged control objects.</p>
      *
      * <p>The Interactive service will either create all scenes and controls, or fail in which case NONE of the
      * scenes and controls provided will be created. In no case will the Interactive service create a subset of scenes
@@ -142,12 +143,12 @@ public class SceneServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * <p>Creates one or more new scenes. Scene IDs MUST be unique and not already exist in the Interactive integration.
-     * Initial etags for the scenes may be provided.</p>
+     * <p>Creates one or more new scenes. Scene IDs MUST be unique and not already exist in the Interactive
+     * integration.</p>
      *
      * <p>Scene objects may also optionally include controls to be set on the scene initially, rather than requiring
      * further {@link InteractiveMethod#CREATE_CONTROLS} calls. If an initial set of controls are provided, they
-     * MUST be fully-qualified, tagged control objects; the etags provided will be used as their initial values.</p>
+     * MUST be fully-qualified, tagged control objects.</p>
      *
      * <p>The Interactive service will either create all scenes and controls, or fail in which case NONE of the
      * scenes and controls provided will be created. In no case will the Interactive service create a subset of scenes
@@ -178,12 +179,12 @@ public class SceneServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * <p>Creates one or more new scenes. Scene IDs MUST be unique and not already exist in the Interactive integration.
-     * Initial etags for the scenes may be provided.</p>
+     * <p>Creates one or more new scenes. Scene IDs MUST be unique and not already exist in the Interactive
+     * integration.</p>
      *
      * <p>Scene objects may also optionally include controls to be set on the scene initially, rather than requiring
      * further {@link InteractiveMethod#CREATE_CONTROLS} calls. If an initial set of controls are provided, they
-     * MUST be fully-qualified, tagged control objects; the etags provided will be used as their initial values.</p>
+     * MUST be fully-qualified, tagged control objects.</p>
      *
      * <p>The Interactive service will either create all scenes and controls, or fail in which case NONE of the
      * scenes and controls provided will be created. In no case will the Interactive service create a subset of scenes
@@ -218,12 +219,12 @@ public class SceneServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * <p>Creates one or more new scenes. Scene IDs MUST be unique and not already exist in the Interactive integration.
-     * Initial etags for the scenes may be provided.</p>
+     * <p>Creates one or more new scenes. Scene IDs MUST be unique and not already exist in the Interactive
+     * integration.</p>
      *
      * <p>Scene objects may also optionally include controls to be set on the scene initially, rather than requiring
      * further {@link InteractiveMethod#CREATE_CONTROLS} calls. If an initial set of controls are provided, they
-     * MUST be fully-qualified, tagged control objects; the etags provided will be used as their initial values.</p>
+     * MUST be fully-qualified, tagged control objects.</p>
      *
      * <p>The Interactive service will either create all scenes and controls, or fail in which case NONE of the
      * scenes and controls provided will be created. In no case will the Interactive service create a subset of scenes
@@ -264,8 +265,7 @@ public class SceneServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes with
-     * their new etags.</p>
+     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes.</p>
      *
      * <p>The Interactive service will either update all the scenes provided, or fail in which case NONE of the
      * scenes provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -286,12 +286,38 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public Set<InteractiveScene> updateScenes(InteractiveScene ... scenes) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return updateScenes(scenes != null ? Arrays.asList(scenes) : Collections.emptySet());
+        return updateScenes(0, scenes);
     }
 
     /**
-     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes with
-     * their new etags.</p>
+     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes.</p>
+     *
+     * <p>The Interactive service will either update all the scenes provided, or fail in which case NONE of the
+     * scenes provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * scenes.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   scenes
+     *          An array of <code>InteractiveScenes</code> to be updated
+     *
+     * @return  A <code>Set</code> of updated <code>InteractiveScenes</code>
+     *
+     * @throws  InteractiveReplyWithErrorException
+     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
+     * @throws  InteractiveRequestNoReplyException
+     *          If no reply is received from the Interactive service
+     *
+     * @see     InteractiveScene
+     *
+     * @since   1.0.0
+     */
+    public Set<InteractiveScene> updateScenes(int priority, InteractiveScene ... scenes) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+        return updateScenes(priority, scenes != null ? Arrays.asList(scenes) : Collections.emptySet());
+    }
+
+    /**
+     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes.</p>
      *
      * <p>The Interactive service will either update all the scenes provided, or fail in which case NONE of the
      * scenes provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -312,18 +338,45 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public Set<InteractiveScene> updateScenes(Collection<InteractiveScene> scenes) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+        return updateScenes(0, scenes);
+    }
+
+    /**
+     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes.</p>
+     *
+     * <p>The Interactive service will either update all the scenes provided, or fail in which case NONE of the
+     * scenes provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * scenes.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   scenes
+     *          A <code>Collection</code> of <code>InteractiveScenes</code> to be updated
+     *
+     * @return  A <code>Set</code> of updated <code>InteractiveScenes</code>
+     *
+     * @throws  InteractiveReplyWithErrorException
+     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
+     * @throws  InteractiveRequestNoReplyException
+     *          If no reply is received from the Interactive service
+     *
+     * @see     InteractiveScene
+     *
+     * @since   1.0.0
+     */
+    public Set<InteractiveScene> updateScenes(int priority, Collection<InteractiveScene> scenes) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
         if (scenes == null) {
             return Collections.emptySet();
         }
 
         JsonObject jsonParams = new JsonObject();
         jsonParams.add(PARAM_KEY_SCENES, GameClient.GSON.toJsonTree(scenes));
+        jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
         return gameClient.using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.UPDATE_SCENES, jsonParams, PARAM_KEY_SCENES, SCENE_SET_TYPE);
     }
 
     /**
-     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes with
-     * their new etags.</p>
+     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes.</p>
      *
      * <p>The Interactive service will either update all the scenes provided, or fail in which case NONE of the
      * scenes provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -354,12 +407,48 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public ListenableFuture<Set<InteractiveScene>> updateScenesAsync(InteractiveScene ... scenes) {
-        return updateScenesAsync(scenes != null ? Arrays.asList(scenes) : Collections.emptySet());
+        return updateScenesAsync(0, scenes);
     }
 
     /**
-     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes with
-     * their new etags.</p>
+     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes.</p>
+     *
+     * <p>The Interactive service will either update all the scenes provided, or fail in which case NONE of the
+     * scenes provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * scenes.</p>
+     *
+     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>ListenableFuture</code>.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   scenes
+     *          An array of <code>InteractiveScenes</code> to be updated
+     *
+     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveScenes</code>
+     *
+     * @see     InteractiveScene
+     *
+     * @since   1.0.0
+     */
+    public ListenableFuture<Set<InteractiveScene>> updateScenesAsync(int priority, InteractiveScene ... scenes) {
+        return updateScenesAsync(priority, scenes != null ? Arrays.asList(scenes) : Collections.emptySet());
+    }
+
+    /**
+     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes with.</p>
      *
      * <p>The Interactive service will either update all the scenes provided, or fail in which case NONE of the
      * scenes provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -380,8 +469,8 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      * <code>ListenableFuture</code>.</p>
      *
      * @param   scenes
-     *
      *          A <code>Collection</code> of <code>InteractiveScenes</code> to be updated
+     *
      * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
      *          <code>InteractiveScenes</code>
      *
@@ -390,12 +479,50 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public ListenableFuture<Set<InteractiveScene>> updateScenesAsync(Collection<InteractiveScene> scenes) {
+        return updateScenesAsync(0, scenes);
+    }
+
+    /**
+     * <p>Updates scenes that already exist. The Interactive service will reply with a set of updated scenes with.</p>
+     *
+     * <p>The Interactive service will either update all the scenes provided, or fail in which case NONE of the
+     * scenes provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * scenes.</p>
+     *
+     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>ListenableFuture</code>.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   scenes
+     *          A <code>Collection</code> of <code>InteractiveScenes</code> to be updated
+     *
+     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveScenes</code>
+     *
+     * @see     InteractiveScene
+     *
+     * @since   1.0.0
+     */
+    public ListenableFuture<Set<InteractiveScene>> updateScenesAsync(int priority, Collection<InteractiveScene> scenes) {
         if (scenes != null) {
             return Futures.immediateFuture(Collections.emptySet());
         }
 
         JsonObject jsonParams = new JsonObject();
         jsonParams.add(PARAM_KEY_SCENES, GameClient.GSON.toJsonTree(scenes, InteractiveScene[].class));
+        jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
         return gameClient.using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.UPDATE_SCENES, jsonParams, PARAM_KEY_SCENES, SCENE_SET_TYPE);
     }
 

@@ -37,9 +37,9 @@ public class InteractiveSceneAdapter implements JsonDeserializer<InteractiveScen
      * Collection of parameter key names
      */
     private static final String PARAM_KEY_SCENE_ID = "sceneID";
-    private static final String PARAM_KEY_ETAG = "etag";
     private static final String PARAM_KEY_GROUPS = "groups";
     private static final String PARAM_KEY_CONTROLS = "controls";
+    private static final String PARAM_META = "meta";
 
     /**
      * {@inheritDoc}
@@ -56,10 +56,10 @@ public class InteractiveSceneAdapter implements JsonDeserializer<InteractiveScen
 
         Set<InteractiveGroup> groups = new HashSet<>();
         Set<InteractiveControl> controls = new HashSet<>();
+        JsonObject metaObject = null;
         JsonObject jsonObject = json.getAsJsonObject();
 
         String sceneID = jsonObject.get(PARAM_KEY_SCENE_ID).getAsString();
-        String etag = jsonObject.get(PARAM_KEY_ETAG).getAsString();
 
         Set<InteractiveGroup> groupSet = context.deserialize(jsonObject.get(PARAM_KEY_GROUPS), GROUP_SET_TYPE);
         if (groupSet != null) {
@@ -76,6 +76,10 @@ public class InteractiveSceneAdapter implements JsonDeserializer<InteractiveScen
             }
         }
 
-        return new InteractiveScene(sceneID, etag, groups, controls).setMeta((JsonObject) jsonObject.get("meta"));
+        if (jsonObject.has(PARAM_META) && jsonObject.get(PARAM_META).isJsonObject()) {
+            metaObject = jsonObject.get(PARAM_META).getAsJsonObject();
+        }
+
+        return new InteractiveScene(sceneID, groups, controls).setMeta(metaObject);
     }
 }

@@ -47,6 +47,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
     /**
      * Collection of parameter key names for various group method calls and events
      */
+    private static final String PARAM_UPDATE_PRIORITY = "priority";
     private static final String PARAM_KEY_GROUPS = "groups";
     private static final String PARAM_KEY_GROUP_ID = "groupID";
     private static final String PARAM_KEY_REASSIGN_GROUP_ID = "reassignGroupID";
@@ -112,7 +113,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
     /**
      * <p>Creates one or more new groups. Each group may have an initial scene set, however if one is not set the
      * Interactive service will assign the group to the default scene. Group IDs MUST be unique and not already exist in
-     * the Interactive integration. An initial etag for the groups may be provided.</p>
+     * the Interactive integration.</p>
      *
      * @param   groups
      *          An array of <code>InteractiveGroups</code> to be created
@@ -135,7 +136,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
     /**
      * <p>Creates one or more new groups. Each group may have an initial scene set, however if one is not set the
      * Interactive service will assign the group to the default scene. Group IDs MUST be unique and not already exist in
-     * the Interactive integration. An initial etag for the groups may be provided.</p>
+     * the Interactive integration.</p>
      *
      * @param   groups
      *          A <code>Collection</code> of <code>InteractiveGroups</code> to be created
@@ -160,7 +161,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
     /**
      * <p>Creates one or more new groups. Each group may have an initial scene set, however if one is not set the
      * Interactive service will assign the group to the default scene. Group IDs MUST be unique and not already exist in
-     * the Interactive integration. An initial etag for the groups may be provided.</p>
+     * the Interactive integration.</p>
      *
      * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
@@ -193,7 +194,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
     /**
      * <p>Creates one or more new groups. Each group may have an initial scene set, however if one is not set the
      * Interactive service will assign the group to the default scene. Group IDs MUST be unique and not already exist in
-     * the Interactive integration. An initial etag for the groups may be provided.</p>
+     * the Interactive integration.</p>
      *
      * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
@@ -230,8 +231,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups with
-     * their new etags.</p>
+     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups.</p>
      *
      * <p>The Interactive service will either update all the groups provided, or fail in which case NONE of the
      * groups provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -252,12 +252,38 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public Set<InteractiveGroup> updateGroups(InteractiveGroup ... groups) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return updateGroups(groups != null ? Arrays.asList(groups) : Collections.emptySet());
+        return updateGroups(0, groups);
     }
 
     /**
-     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups with
-     * their new etags.</p>
+     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups.</p>
+     *
+     * <p>The Interactive service will either update all the groups provided, or fail in which case NONE of the
+     * groups provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * groups.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   groups
+     *          An array of <code>InteractiveGroup InteractiveGroups</code> to be updated
+     *
+     * @return  A <code>Set</code> of updated <code>InteractiveGroups</code>
+     *
+     * @throws  InteractiveReplyWithErrorException
+     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
+     * @throws  InteractiveRequestNoReplyException
+     *          If no reply is received from the Interactive service
+     *
+     * @see     InteractiveGroup
+     *
+     * @since   1.0.0
+     */
+    public Set<InteractiveGroup> updateGroups(int priority, InteractiveGroup ... groups) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+        return updateGroups(priority, groups != null ? Arrays.asList(groups) : Collections.emptySet());
+    }
+
+    /**
+     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups.</p>
      *
      * <p>The Interactive service will either update all the groups provided, or fail in which case NONE of the
      * groups provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -278,18 +304,45 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public Set<InteractiveGroup> updateGroups(Collection<InteractiveGroup> groups) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+        return updateGroups(0, groups);
+    }
+
+    /**
+     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups.</p>
+     *
+     * <p>The Interactive service will either update all the groups provided, or fail in which case NONE of the
+     * groups provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * groups.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   groups
+     *          A <code>Collection</code> of <code>InteractiveGroups</code> to be updated
+     *
+     * @return  A <code>Set</code> of updated <code>InteractiveGroups</code>
+     *
+     * @throws  InteractiveReplyWithErrorException
+     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
+     * @throws  InteractiveRequestNoReplyException
+     *          If no reply is received from the Interactive service
+     *
+     * @see     InteractiveGroup
+     *
+     * @since   1.0.0
+     */
+    public Set<InteractiveGroup> updateGroups(int priority, Collection<InteractiveGroup> groups) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
         if (groups == null) {
             return Collections.emptySet();
         }
 
         JsonObject jsonParams = new JsonObject();
         jsonParams.add(PARAM_KEY_GROUPS, GameClient.GSON.toJsonTree(groups));
+        jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
         return gameClient.using(GameClient.RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.UPDATE_GROUPS, jsonParams, PARAM_KEY_GROUPS, GROUP_SET_TYPE);
     }
 
     /**
-     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups with
-     * their new etags.</p>
+     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups.</p>
      *
      * <p>The Interactive service will either update all the groups provided, or fail in which case NONE of the
      * groups provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -320,12 +373,48 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public ListenableFuture<Set<InteractiveGroup>> updateGroupsAsync(InteractiveGroup ... groups) {
-        return updateGroupsAsync(groups != null ? Arrays.asList(groups) : Collections.emptyList());
+        return updateGroupsAsync(0, groups);
     }
 
     /**
-     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups with
-     * their new etags.</p>
+     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups.</p>
+     *
+     * <p>The Interactive service will either update all the groups provided, or fail in which case NONE of the
+     * groups provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * groups.</p>
+     *
+     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>ListenableFuture</code>.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   groups
+     *          An array of <code>InteractiveGroups</code> to be updated
+     *
+     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveGroups</code>
+     *
+     * @see     InteractiveGroup
+     *
+     * @since   1.0.0
+     */
+    public ListenableFuture<Set<InteractiveGroup>> updateGroupsAsync(int priority, InteractiveGroup ... groups) {
+        return updateGroupsAsync(priority, groups != null ? Arrays.asList(groups) : Collections.emptyList());
+    }
+
+    /**
+     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups.</p>
      *
      * <p>The Interactive service will either update all the groups provided, or fail in which case NONE of the
      * groups provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -356,12 +445,50 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public ListenableFuture<Set<InteractiveGroup>> updateGroupsAsync(Collection<InteractiveGroup> groups) {
+        return updateGroupsAsync(0, groups);
+    }
+
+    /**
+     * <p>Bulk-updates groups that already exist. The Interactive service will reply with a set of updated groups.</p>
+     *
+     * <p>The Interactive service will either update all the groups provided, or fail in which case NONE of the
+     * groups provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * groups.</p>
+     *
+     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>ListenableFuture</code>.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   groups
+     *          A <code>Collection</code> of <code>InteractiveGroups</code> to be updated
+     *
+     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveGroups</code>
+     *
+     * @see     InteractiveGroup
+     *
+     * @since   1.0.0
+     */
+    public ListenableFuture<Set<InteractiveGroup>> updateGroupsAsync(int priority, Collection<InteractiveGroup> groups) {
         if (groups == null) {
             return Futures.immediateFuture(Collections.emptySet());
         }
 
         JsonObject jsonParams = new JsonObject();
         jsonParams.add(PARAM_KEY_GROUPS, GameClient.GSON.toJsonTree(groups));
+        jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
         return gameClient.using(GameClient.RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.UPDATE_GROUPS, jsonParams, PARAM_KEY_GROUPS, GROUP_SET_TYPE);
     }
 

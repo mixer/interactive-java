@@ -51,7 +51,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      * @since   1.0.0
      */
     public ButtonControl(String controlID) {
-        this(controlID, null, null, new InteractiveControlPosition[0]);
+        this(controlID, null, new InteractiveControlPosition[0]);
     }
 
     /**
@@ -61,15 +61,13 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      *          Unique identifier for the <code>ButtonControl</code>
      * @param   sceneID
      *          Unique identifier for the <code>InteractiveScene</code> that contains this control
-     * @param   etag
-     *          The etag for the <code>ButtonControl</code>
      * @param   position
      *          An array of initial <code>InteractiveControlPosition</code> for this control
      *
      * @since   1.0.0
      */
-    public ButtonControl(String controlID, String sceneID, String etag, InteractiveControlPosition... position) {
-        super(controlID, sceneID, etag, InteractiveControlType.BUTTON, position);
+    public ButtonControl(String controlID, String sceneID, InteractiveControlPosition... position) {
+        super(controlID, sceneID, InteractiveControlType.BUTTON, position);
     }
 
     /**
@@ -266,7 +264,6 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
             for (ButtonControl object : objects) {
                 if (this.equals(object)) {
                     this.meta = object.meta;
-                    this.etag = object.etag;
                     this.setDisabled(object.isDisabled());
                     this.keycode = object.keycode;
                     this.text = object.text;
@@ -291,7 +288,6 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
         return Objects.toStringHelper(this)
                 .add("controlID", getControlID())
                 .add("sceneID", getSceneID())
-                .add("etag", getEtag())
                 .add("kind", getKind())
                 .add("disabled", isDisabled())
                 .add("keycode", keycode)

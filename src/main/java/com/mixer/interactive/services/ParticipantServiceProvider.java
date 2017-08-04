@@ -42,6 +42,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
     /**
      * Collection of parameter key names for various participant method calls and events
      */
+    private static final String PARAM_UPDATE_PRIORITY = "priority";
     private static final String PARAM_KEY_PARTICIPANTS = "participants";
     private static final String PARAM_KEY_FROM = "from";
     private static final String PARAM_KEY_HAS_MORE = "hasMore";
@@ -169,36 +170,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
 
     /**
      * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
-     * participants with their new etags.</p>
-     *
-     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
-     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * participants. If a provided participant is not connected to the integration, the update to that participant will
-     * be ignored.</p>
-     *
-     * @param   participants
-     *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
-     *
-     * @return  A <code>Set</code> of updated <code>InteractiveParticipants</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveParticipant
-     *
-     * @since   1.0.0
-     */
-    public Set<InteractiveParticipant> updateParticipants(Collection<InteractiveParticipant> participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return participants != null
-                ? updateParticipants(participants.toArray(new InteractiveParticipant[0]))
-                : Collections.emptySet();
-    }
-
-    /**
-     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
-     * participants with their new etags.</p>
+     * participants.</p>
      *
      * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
      * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -220,57 +192,104 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public Set<InteractiveParticipant> updateParticipants(InteractiveParticipant ... participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        if (participants == null) {
-            return Collections.emptySet();
-        }
-
-        JsonObject jsonParams = new JsonObject();
-        jsonParams.add(PARAM_KEY_PARTICIPANTS, GameClient.GSON.toJsonTree(participants, InteractiveParticipant[].class));
-        return gameClient.using(GameClient.RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.UPDATE_PARTICIPANTS, jsonParams, PARAM_KEY_PARTICIPANTS, PARTICIPANT_SET_TYPE);
+        return updateParticipants(0, participants);
     }
 
     /**
      * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
-     * participants with their new etags.</p>
+     * participants.</p>
      *
      * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
      * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
      * participants. If a provided participant is not connected to the integration, the update to that participant will
      * be ignored.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
+     * @param   priority
+     *          The priority value for the update
      * @param   participants
-     *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
+     *          An array of <code>InteractiveParticipants</code> to be updated
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveParticipants</code>
+     * @return  A <code>Set</code> of updated <code>InteractiveParticipants</code>
+     *
+     * @throws  InteractiveReplyWithErrorException
+     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
+     * @throws  InteractiveRequestNoReplyException
+     *          If no reply is received from the Interactive service
      *
      * @see     InteractiveParticipant
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(Collection<InteractiveParticipant> participants) {
-        return participants != null
-                ? updateParticipantsAsync(participants.toArray(new InteractiveParticipant[0]))
-                : Futures.immediateFuture(Collections.emptySet());
+    public Set<InteractiveParticipant> updateParticipants(int priority, InteractiveParticipant ... participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+        return participants != null ? updateParticipants(priority, Arrays.asList(participants)) : Collections.emptySet();
     }
 
     /**
      * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
-     * participants with their new etags.</p>
+     * participants.</p>
+     *
+     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
+     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * participants. If a provided participant is not connected to the integration, the update to that participant will
+     * be ignored.</p>
+     *
+     * @param   participants
+     *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
+     *
+     * @return  A <code>Set</code> of updated <code>InteractiveParticipants</code>
+     *
+     * @throws  InteractiveReplyWithErrorException
+     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
+     * @throws  InteractiveRequestNoReplyException
+     *          If no reply is received from the Interactive service
+     *
+     * @see     InteractiveParticipant
+     *
+     * @since   1.0.0
+     */
+    public Set<InteractiveParticipant> updateParticipants(Collection<InteractiveParticipant> participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+        return updateParticipants(0, participants);
+    }
+
+    /**
+     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
+     * participants.</p>
+     *
+     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
+     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * participants. If a provided participant is not connected to the integration, the update to that participant will
+     * be ignored.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   participants
+     *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
+     *
+     * @return  A <code>Set</code> of updated <code>InteractiveParticipants</code>
+     *
+     * @throws  InteractiveReplyWithErrorException
+     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
+     * @throws  InteractiveRequestNoReplyException
+     *          If no reply is received from the Interactive service
+     *
+     * @see     InteractiveParticipant
+     *
+     * @since   1.0.0
+     */
+    public Set<InteractiveParticipant> updateParticipants(int priority, Collection<InteractiveParticipant> participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+        if (participants == null) {
+            return Collections.emptySet();
+        }
+
+        JsonObject jsonParams = new JsonObject();
+        jsonParams.add(PARAM_KEY_PARTICIPANTS, GameClient.GSON.toJsonTree(participants));
+        jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
+        return gameClient.using(GameClient.RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.UPDATE_PARTICIPANTS, jsonParams, PARAM_KEY_PARTICIPANTS, PARTICIPANT_SET_TYPE);
+    }
+
+    /**
+     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
+     * participants.</p>
      *
      * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
      * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
@@ -302,12 +321,128 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * @since   1.0.0
      */
     public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(InteractiveParticipant ... participants) {
+        return updateParticipantsAsync(0, participants);
+    }
+
+    /**
+     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
+     * participants.</p>
+     *
+     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
+     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * participants. If a provided participant is not connected to the integration, the update to that participant will
+     * be ignored.</p>
+     *
+     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>ListenableFuture</code>.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   participants
+     *          An array of <code>InteractiveParticipants</code> to be updated
+     *
+     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveParticipants</code>
+     *
+     * @see     InteractiveParticipant
+     *
+     * @since   1.0.0
+     */
+    public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(int priority, InteractiveParticipant ... participants) {
+        return participants != null ? updateParticipantsAsync(priority, Arrays.asList(participants)) : Futures.immediateFuture(Collections.emptySet());
+    }
+
+    /**
+     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
+     * participants.</p>
+     *
+     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
+     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * participants. If a provided participant is not connected to the integration, the update to that participant will
+     * be ignored.</p>
+     *
+     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>ListenableFuture</code>.</p>
+     *
+     * @param   participants
+     *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
+     *
+     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveParticipants</code>
+     *
+     * @see     InteractiveParticipant
+     *
+     * @since   1.0.0
+     */
+    public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(Collection<InteractiveParticipant> participants) {
+        return updateParticipantsAsync(0, participants);
+    }
+
+    /**
+     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
+     * participants.</p>
+     *
+     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
+     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
+     * participants. If a provided participant is not connected to the integration, the update to that participant will
+     * be ignored.</p>
+     *
+     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>ListenableFuture</code>.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   participants
+     *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
+     *
+     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveParticipants</code>
+     *
+     * @see     InteractiveParticipant
+     *
+     * @since   1.0.0
+     */
+    public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(int priority, Collection<InteractiveParticipant> participants) {
         if (participants == null) {
             return Futures.immediateFuture(Collections.emptySet());
         }
 
         JsonObject jsonParams = new JsonObject();
-        jsonParams.add(PARAM_KEY_PARTICIPANTS, GameClient.GSON.toJsonTree(participants, InteractiveParticipant[].class));
+        jsonParams.add(PARAM_KEY_PARTICIPANTS, GameClient.GSON.toJsonTree(participants));
+        jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
         return gameClient.using(GameClient.RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.UPDATE_PARTICIPANTS, jsonParams, PARAM_KEY_PARTICIPANTS, PARTICIPANT_SET_TYPE);
     }
 

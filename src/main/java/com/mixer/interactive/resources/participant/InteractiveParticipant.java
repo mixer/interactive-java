@@ -6,7 +6,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
@@ -72,8 +72,6 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
      *
      * @param   sessionID
      *          Unique string identifier for the participant in this session
-     * @param   etag
-     *          The etag for the <code>InteractiveParticipant</code>
      * @param   userID
      *          The user id (as an unsigned integer) for the participant on Mixer.
      * @param   username
@@ -91,9 +89,8 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
      *
      * @since   1.0.0
      */
-    private InteractiveParticipant(String sessionID, String etag, Integer userID, String username, Integer level, Long lastInputAt, Long connectedAt, Boolean disabled, String groupID) {
+    private InteractiveParticipant(String sessionID, Integer userID, String username, Integer level, Long lastInputAt, Long connectedAt, Boolean disabled, String groupID) {
         this.sessionID = sessionID;
-        this.etag = etag;
         this.userID = userID;
         this.username = username;
         this.level = level;
@@ -287,7 +284,6 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
             for (InteractiveParticipant object : objects) {
                 if (this.equals(object)) {
                     this.meta = object.meta;
-                    this.etag = object.etag;
                     this.username = object.username;
                     this.level = object.level;
                     this.lastInputAt = object.lastInputAt;
@@ -367,14 +363,13 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
         return Hashing.md5().newHasher()
                 .putString(sessionID, StandardCharsets.UTF_8)
                 .putInt(userID)
-                .putString(etag, StandardCharsets.UTF_8)
                 .putInt(level)
                 .putString(groupID, StandardCharsets.UTF_8)
                 .putBoolean(disabled)
                 .putString(username, StandardCharsets.UTF_8)
                 .putLong(lastInputAt)
                 .putLong(connectedAt)
-                .putObject(meta, (Funnel<JsonObject>) (from, into) -> {
+                .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
                     if (from != null && !from.isJsonNull()) {
                         into.putString(from.toString(), StandardCharsets.UTF_8);
                     }
@@ -404,7 +399,6 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("sessionID", sessionID)
-                .add("etag", etag)
                 .add("userID", userID)
                 .add("username", username)
                 .add("level", level)

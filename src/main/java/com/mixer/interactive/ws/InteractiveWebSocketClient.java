@@ -97,6 +97,12 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     private AtomicInteger nextPacketId = new AtomicInteger(0);
 
     /**
+     * The last packet sequence number seen from the Interactive service.
+     * Read and updated internally as packets are sent and retrieved.
+     */
+    private AtomicInteger lastSequenceNumber = new AtomicInteger();
+
+    /**
      * Initialize a new <code>InteractiveWebSocketClient</code>.
      *
      * @param   gameClient
@@ -186,6 +192,15 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     }
 
     /**
+     * Returns the sequence number that the socket has last seen from the service.
+     *
+     * @return  The next last packet sequence number
+     *
+     * @since   1.0.0
+     */
+    public int getLastSequenceNumber() { return this.lastSequenceNumber.get(); }
+
+    /**
      * Retrieves the <code>CompressionScheme</code> this <code>InteractiveWebSocketClient</code> is using.
      *
      * @return  The <code>CompressionScheme</code> this <code>InteractiveWebSocketClient</code> is using
@@ -232,7 +247,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
-        LOG.info("Successfully established connection to Interactive integration (project version '{}') on host '{}'", gameClient.getProjectVersionId(), getURI());
+        LOG.info("Connected to Interactive integration (project version '{}') on host '{}'", gameClient.getProjectVersionId(), getURI());
         gameClient.getEventBus().post(new ConnectionOpenEvent(gameClient.getProjectVersionId(), getURI(), serverHandshake.getHttpStatus(), serverHandshake.getHttpStatusMessage()));
     }
 
@@ -290,7 +305,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
         LOG.debug("PROJECT_ID[{}] - RCVD[TEXT]: {}'", gameClient.getProjectVersionId(), message);
 
         // Parse packets from the message
-        Set<InteractivePacket> packets = new HashSet<>();
+        List<InteractivePacket> packets = new ArrayList<>();
         JsonElement jsonObject = JSON_PARSER.parse(message);
         if (jsonObject.isJsonArray()) {
             Collections.addAll(packets, GameClient.GSON.fromJson(jsonObject, INTERACTIVE_PACKET_SET_TYPE));
@@ -350,7 +365,13 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      *
      * @since   1.0.0
      */
-    private void processReceivedPackets(Collection<InteractivePacket> receivedPackets) {
+    private void processReceivedPackets(List<InteractivePacket> receivedPackets) {
+        if (receivedPackets.isEmpty()) {
+            return;
+        }
+
+        receivedPackets.sort(Comparator.comparingInt(InteractivePacket::getSequenceNumber));
+
         for (InteractivePacket packet : receivedPackets) {
             if (packet instanceof MethodPacket) {
                 InteractiveEvent interactiveEvent = getEventFromPacket((MethodPacket) packet);
@@ -372,6 +393,8 @@ public class InteractiveWebSocketClient extends WebSocketClient {
                 }
             }
         }
+
+        lastSequenceNumber.set(receivedPackets.get(receivedPackets.size() - 1).getSequenceNumber());
     }
 
     /**

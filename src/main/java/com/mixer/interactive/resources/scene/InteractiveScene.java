@@ -6,7 +6,7 @@ import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.gson.JsonObject;
+import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
@@ -74,7 +74,7 @@ public class InteractiveScene
      * @since   1.0.0
      */
     public InteractiveScene(String sceneID) {
-        this(sceneID, null, null, null);
+        this(sceneID, null, null);
     }
 
     /**
@@ -82,8 +82,6 @@ public class InteractiveScene
      *
      * @param   sceneID
      *          Identifier for the <code>InteractiveScene</code>
-     * @param   etag
-     *          The etag for the <code>InteractiveScene</code>
      * @param   groups
      *          A <code>Collection</code> of <code>InteractiveGroups</code> that are currently on this
      *          <code>InteractiveScene</code>
@@ -93,7 +91,7 @@ public class InteractiveScene
      *
      * @since 1.0.0
      */
-    public InteractiveScene(String sceneID, String etag, Collection<InteractiveGroup> groups, Collection<InteractiveControl> controls) {
+    public InteractiveScene(String sceneID, Collection<InteractiveGroup> groups, Collection<InteractiveControl> controls) {
 
         if (sceneID != null && !sceneID.isEmpty()) {
             this.sceneID = sceneID;
@@ -102,8 +100,6 @@ public class InteractiveScene
             LOG.fatal("SceneID must be non-null and non-empty");
             throw new IllegalArgumentException("SceneID must be non-null and non-empty");
         }
-
-        this.etag = etag;
 
         if (groups != null) {
             this.groups.addAll(groups);
@@ -277,7 +273,7 @@ public class InteractiveScene
      */
     public InteractiveScene removeControls(String ... controlIDs) {
         for (String controlID : controlIDs) {
-            controls.removeIf(control -> controlID.equals(control.getEtag()));
+            controls.removeIf(control -> controlID.equals(control.getControlID()));
         }
         return getThis();
     }
@@ -353,7 +349,6 @@ public class InteractiveScene
             for (InteractiveScene object : objects) {
                 if (this.equals(object)) {
                     this.meta = object.meta;
-                    this.etag = object.etag;
                     this.controls.clear();
                     this.controls.addAll(object.getControls());
                 }
@@ -551,13 +546,12 @@ public class InteractiveScene
     public int hashCode() {
         return Hashing.md5().newHasher()
                 .putString(sceneID != null ? sceneID : "", StandardCharsets.UTF_8)
-                .putString(etag != null ? etag : "", StandardCharsets.UTF_8)
                 .putObject(controls, (Funnel<Set<InteractiveControl>>) (interactiveControls, into) -> {
                     if (interactiveControls != null) {
                         interactiveControls.forEach(control -> into.putInt(control.hashCode()));
                     }
                 })
-                .putObject(meta, (Funnel<JsonObject>) (from, into) -> {
+                .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
                     if (from != null && !from.isJsonNull()) {
                         into.putString(from.toString(), StandardCharsets.UTF_8);
                     }
@@ -587,7 +581,6 @@ public class InteractiveScene
     public String toString() {
         return Objects.toStringHelper(this)
                 .add("sceneID", sceneID)
-                .add("etag", etag)
                 .add("groups", groups)
                 .add("controls", controls)
                 .add("meta", getMeta())
