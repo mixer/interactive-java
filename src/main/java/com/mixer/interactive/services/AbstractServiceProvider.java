@@ -1,8 +1,8 @@
 package com.mixer.interactive.services;
 
 import com.mixer.interactive.GameClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <code>AbstractServiceProvider</code> performs some function within the client.
@@ -16,7 +16,7 @@ public abstract class AbstractServiceProvider {
     /**
      * Logger
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractServiceProvider.class);
 
     /**
      * <code>GameClient</code> that owns this service provider
@@ -33,7 +33,7 @@ public abstract class AbstractServiceProvider {
      */
     public AbstractServiceProvider(GameClient gameClient) {
         if (gameClient == null) {
-            LOG.fatal("GameClient cannot be null");
+            LOG.error("GameClient cannot be null");
             throw new IllegalArgumentException("GameClient cannot be null");
         }
 

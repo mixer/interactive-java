@@ -11,8 +11,8 @@ import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.protocol.MethodPacket;
 import com.mixer.interactive.protocol.ReplyPacket;
 import com.mixer.interactive.resources.participant.InteractiveParticipant;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.util.*;
@@ -32,7 +32,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
     /**
      * Logger
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(ParticipantServiceProvider.class);
 
     /**
      * Type object used to serialize/de-serialize a <code>Set</code> of <code>InteractiveParticipant</code>.
@@ -475,7 +475,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
     private Set<InteractiveParticipant> getParticipants(InteractiveMethod method, long initialMarker, Comparator<InteractiveParticipant> comparator) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
 
         if (method != InteractiveMethod.GET_ALL_PARTICIPANTS && method != InteractiveMethod.GET_ACTIVE_PARTICIPANTS) {
-            LOG.fatal("Illegal method specified (may only be one of 'getAllParticipants' or 'getActiveParticipants')");
+            LOG.error("Illegal method specified (may only be one of 'getAllParticipants' or 'getActiveParticipants')");
             throw new IllegalArgumentException("Illegal method specified (may only be one of 'getAllParticipants' or 'getActiveParticipants')");
         }
 

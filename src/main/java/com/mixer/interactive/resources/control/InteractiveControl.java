@@ -15,8 +15,8 @@ import com.mixer.interactive.resources.IInteractiveCreatable;
 import com.mixer.interactive.resources.IInteractiveDeletable;
 import com.mixer.interactive.resources.InteractiveResource;
 import com.mixer.interactive.resources.scene.InteractiveScene;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -43,7 +43,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
     /**
      * Logger.
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(InteractiveControl.class);
 
     /**
      * Constant representing the default scene
@@ -155,7 +155,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
             this.controlID = controlID;
         }
         else {
-            LOG.fatal("ControlID must be non-null and non-empty (was provided: {})", controlID);
+            LOG.error("ControlID must be non-null and non-empty (was provided: {})", controlID);
             throw new IllegalArgumentException("ControlID must be non-null and non-empty");
         }
 
@@ -170,7 +170,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
             this.kind = kind;
         }
         else {
-            LOG.fatal("Invalid control type");
+            LOG.error("Invalid control type");
             throw new IllegalArgumentException("Invalid control type");
         }
 

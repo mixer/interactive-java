@@ -16,12 +16,13 @@ import com.mixer.interactive.resources.core.BandwidthThrottle;
 import com.mixer.interactive.resources.group.InteractiveGroup;
 import com.mixer.interactive.resources.participant.InteractiveParticipant;
 import com.mixer.interactive.resources.scene.InteractiveScene;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URL;
 import java.util.*;
+import java.util.function.Consumer;
 
 import static com.mixer.interactive.GameClient.*;
 
@@ -38,7 +39,7 @@ public class ExampleInteractiveClient {
     /**
      * Logger
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(ExampleInteractiveClient.class);
 
     /**
      * Default project version id to be used if one cannot be retrieved from the properties file
@@ -165,11 +166,11 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             case "getTime": {
-                                LOG.debug(GAME_CLIENT.getTime());
+                                LOG.debug(GAME_CLIENT.getTime().toString());
                                 break;
                             }
                             case "getMemoryStats": {
-                                LOG.debug(GAME_CLIENT.getMemoryStats());
+                                LOG.debug(GAME_CLIENT.getMemoryStats().toString());
                                 break;
                             }
                             case "getThrottleState": {
@@ -192,14 +193,14 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             case "getAllParticipants": {
-                                GAME_CLIENT.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants().forEach(LOG::info);
+                                GAME_CLIENT.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants().forEach(participant -> LOG.info(participant.toString()));
                                 break;
                             }
                             case "updateParticipants": {
                                 if (commandArguments.size() == 2) {
                                     Set<InteractiveParticipant> participants = GAME_CLIENT.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants();
                                     participants.forEach(participant -> participant.changeGroup(commandArguments.get(1)));
-                                    GAME_CLIENT.using(PARTICIPANT_SERVICE_PROVIDER).updateParticipants(participants).forEach(LOG::debug);
+                                    GAME_CLIENT.using(PARTICIPANT_SERVICE_PROVIDER).updateParticipants(participants).forEach(participant -> LOG.info(participant.toString()));
                                 }
                                 else {
                                     LOG.error("Usage: updateParticipants <newGroupName>");
@@ -207,7 +208,7 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             case "getGroups": {
-                                GAME_CLIENT.using(GROUP_SERVICE_PROVIDER).getGroups().forEach(LOG::info);
+                                GAME_CLIENT.using(GROUP_SERVICE_PROVIDER).getGroups().forEach(participant -> LOG.info(participant.toString()));
                                 break;
                             }
                             case "createGroups": {
@@ -254,7 +255,7 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             case "getScenes": {
-                                GAME_CLIENT.using(SCENE_SERVICE_PROVIDER).getScenes().forEach(LOG::info);
+                                GAME_CLIENT.using(SCENE_SERVICE_PROVIDER).getScenes().forEach(scene -> LOG.info(scene.toString()));
                                 break;
                             }
                             case "createScenes": {

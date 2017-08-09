@@ -1,8 +1,8 @@
 package com.mixer.interactive.services;
 
 import com.mixer.interactive.GameClient;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
@@ -20,7 +20,7 @@ public class ServiceManager<T extends AbstractServiceProvider> {
     /**
      * Logger.
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(ServiceManager.class);
 
     /**
      * <code>Set</code> of service provider instances
@@ -42,7 +42,7 @@ public class ServiceManager<T extends AbstractServiceProvider> {
      */
     public ServiceManager(GameClient gameClient) {
         if (gameClient == null) {
-            LOG.fatal("GameClient may not be null");
+            LOG.error("GameClient may not be null");
             throw new IllegalArgumentException("GameClient may not be null");
         }
         this.gameClient = gameClient;

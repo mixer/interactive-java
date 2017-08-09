@@ -5,8 +5,8 @@ import com.google.gson.*;
 import com.mixer.interactive.resources.control.InteractiveControl;
 import com.mixer.interactive.resources.group.InteractiveGroup;
 import com.mixer.interactive.resources.scene.InteractiveScene;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.util.HashSet;
@@ -26,7 +26,7 @@ public class InteractiveSceneAdapter implements JsonDeserializer<InteractiveScen
     /**
      * Logger.
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(InteractiveSceneAdapter.class);
 
     /**
      * Type object used to serialize/de-serialize a <code>Set</code> of <code>InteractiveGroups</code>.
@@ -50,7 +50,7 @@ public class InteractiveSceneAdapter implements JsonDeserializer<InteractiveScen
     public InteractiveScene deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 
         if (!json.isJsonObject()) {
-            LOG.fatal("Unable to parse an InteractiveScene");
+            LOG.error("Unable to parse an InteractiveScene");
             throw new JsonParseException("Unable to parse an InteractiveScene");
         }
 

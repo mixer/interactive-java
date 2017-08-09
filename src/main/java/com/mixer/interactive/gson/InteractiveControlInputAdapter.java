@@ -2,8 +2,8 @@ package com.mixer.interactive.gson;
 
 import com.google.gson.*;
 import com.mixer.interactive.resources.control.InteractiveControlInput;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ public class InteractiveControlInputAdapter implements JsonDeserializer<Interact
     /**
      * Logger.
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(InteractiveControlInputAdapter.class);
 
     /**
      * {@inheritDoc}
@@ -32,7 +32,7 @@ public class InteractiveControlInputAdapter implements JsonDeserializer<Interact
     public InteractiveControlInput deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 
         if (!json.isJsonObject()) {
-            LOG.fatal("Unable to parse an InteractiveControlInput");
+            LOG.error("Unable to parse an InteractiveControlInput");
             throw new JsonParseException("Unable to parse an InteractiveControlInput");
         }
 

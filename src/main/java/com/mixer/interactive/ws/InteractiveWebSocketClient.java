@@ -34,11 +34,11 @@ import com.mixer.interactive.protocol.MethodPacket;
 import com.mixer.interactive.protocol.ReplyPacket;
 import com.mixer.interactive.resources.core.CompressionScheme;
 import com.mixer.interactive.util.compression.CompressionUtil;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -64,7 +64,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     /**
      * Logger.
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(InteractiveWebSocketClient.class);
 
     /**
      * Type object used to serialize/de-serialize a <code>Set</code> of <code>InteractivePacket</code>.

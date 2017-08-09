@@ -2,8 +2,8 @@ package com.mixer.interactive.protocol;
 
 import com.google.common.base.Objects;
 import com.google.gson.JsonElement;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <code>MethodPacket</code> represents a request for the recipient (which could either be the Interactive service
@@ -22,7 +22,7 @@ public class MethodPacket extends InteractivePacket {
     /**
      * Logger
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(MethodPacket.class);
 
     /**
      * The name of the method to call on the Interactive service
@@ -109,7 +109,7 @@ public class MethodPacket extends InteractivePacket {
         super(id, "method");
 
         if (method == null) {
-            LOG.fatal("Method name must not be null");
+            LOG.error("Method name must not be null");
             throw new IllegalArgumentException("Method name must not be null");
         }
 

@@ -6,11 +6,11 @@ import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.protocol.MethodPacket;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class FakeParticipantClient extends WebSocketClient {
     /**
      * Logger
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(FakeParticipantClient.class);
 
     /**
      * Random number generator

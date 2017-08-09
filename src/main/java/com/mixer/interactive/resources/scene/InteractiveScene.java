@@ -17,8 +17,8 @@ import com.mixer.interactive.resources.IInteractiveUpdatable;
 import com.mixer.interactive.resources.InteractiveResource;
 import com.mixer.interactive.resources.control.InteractiveControl;
 import com.mixer.interactive.resources.group.InteractiveGroup;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -43,7 +43,7 @@ public class InteractiveScene
     /**
      * Logger.
      */
-    private static final Logger LOG = LogManager.getLogger();
+    private static final Logger LOG = LoggerFactory.getLogger(InteractiveScene.class);
 
     /**
      * Constant representing the default scene
@@ -97,7 +97,7 @@ public class InteractiveScene
             this.sceneID = sceneID;
         }
         else {
-            LOG.fatal("SceneID must be non-null and non-empty");
+            LOG.error("SceneID must be non-null and non-empty");
             throw new IllegalArgumentException("SceneID must be non-null and non-empty");
         }
 
