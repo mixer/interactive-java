@@ -1,1 +1,0 @@
-Be sure to supply your own `projectVersion` and `oauthToken` in the `interactive-project.json` file
