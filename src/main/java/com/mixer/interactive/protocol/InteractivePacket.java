@@ -102,7 +102,8 @@ public abstract class InteractivePacket {
      * Sets the packet sequence number. This is primarily for internal 'low level' use in the socket in outgoing
      * packets.
      *
-     * @return  The packet sequence number
+     * @param   sequenceNumber
+     *          Unique sequence number for the packet
      *
      * @since   1.0.0
      */

@@ -23,7 +23,13 @@
         <slf4j.version>1.7.25</slf4j.version>
         <log4j2.version>2.8.2</log4j2.version>
         <junit.version>4.12</junit.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <scm-publish.scmBranch>gh-pages</scm-publish.scmBranch>
+        <scm-publish.pubScmUrl>scm:git:git@github.com:mixer/interactive-java.git</scm-publish.pubScmUrl>
+        <scm-publish.repoUrl>https://github.com/mixer/interactive-java</scm-publish.repoUrl>
+        <scm-publish.siteDocOutputDirectory>${project.build.directory}/site/apidocs</scm-publish.siteDocOutputDirectory>
     </properties>
 
     <dependencies>
@@ -93,6 +99,13 @@
         </snapshotRepository>
     </distributionManagement>
 
+    <scm>
+        <connection>${scm-publish.pubScmUrl}</connection>
+        <url>${scm-publish.repoUrl}</url>
+        <developerConnection>${scm-publish.pubScmUrl}</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
     <build>
         <plugins>
             <plugin>
@@ -121,6 +134,19 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
                 <version>2.10.4</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-scm-publish-plugin</artifactId>
+                <version>1.0</version>
+                <inherited>true</inherited>
+                <configuration>
+                    <checkinComment>docs(gh-pages): publishing site docs for ${project.artifactId}:${project.version}</checkinComment>
+                    <content>${scm-publish.siteDocOutputDirectory}</content>
+                    <skipDeletedFiles>true</skipDeletedFiles>
+                    <pubScmUrl>${scm-publish.pubScmUrl}</pubScmUrl>
+                    <scmBranch>${scm-publish.scmBranch}</scmBranch>
+                </configuration>
             </plugin>
         </plugins>
     </build>
