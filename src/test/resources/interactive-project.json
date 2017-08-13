@@ -1,7 +1,7 @@
 {
-  "testLocal": true,
-  "emptyProjectVersion": 1000,
-  "singleSceneProjectVersion": 1001,
-  "multiSceneProjectVersion": 1002,
-  "oauthToken": "foo"
+  "LOCAL_TEST": true,
+  "EMPTY_PROJECT_ID": 109142,
+  "SINGLE_SCENE_PROJECT_ID": 109160,
+  "MULTIPLE_SCENE_PROJECT_ID": 109172,
+  "INTERACTIVE_OAUTH_TOKEN": "TIXA5agEupYJh31cf07ghWZI5MA892zPCT7nzj9CTVmOXeOLQHZBRyf7fJsu12Hj"
 }

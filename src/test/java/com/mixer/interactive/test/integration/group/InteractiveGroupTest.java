@@ -28,7 +28,7 @@ import static com.mixer.interactive.test.util.TestUtils.*;
  * @since       1.0.0
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class InteractiveGroupTests {
+public class InteractiveGroupTest {
 
     /**
      * URI for Interactive host being tested against

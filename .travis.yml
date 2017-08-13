@@ -2,6 +2,6 @@ language: java
 jdk: oraclejdk8
 cache:
   directories: "$HOME/.m2"
-script: mvn deploy
-  --settings settings.xml
+script:
+  - if [ "$TRAVIS_BRANCH" = "master" ]; then mvn deploy --settings settings.xml; else mvn test; fi
 

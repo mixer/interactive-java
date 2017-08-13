@@ -11,7 +11,7 @@ import org.junit.Test;
  *
  * @since       1.0.0
  */
-public class GameClientTests {
+public class GameClientTest {
 
     /**
      * The project version ID for the Interactive integration that this test will use

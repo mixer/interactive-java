@@ -2,6 +2,7 @@ package com.mixer.interactive.test.unit.services;
 
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.services.AbstractServiceProvider;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +14,7 @@ import org.junit.Test;
  *
  * @since       1.0.0
  */
-public class ServiceManagerTests {
+public class ServiceManagerTest {
 
     /**
      * The project version ID for the Interactive integration that this test will use
@@ -23,11 +24,11 @@ public class ServiceManagerTests {
     /**
      * The <code>GameClient</code> that this test will use
      */
-    private static GameClient gameClient;
+    private static GameClient gameClient = new GameClient(PROJECT_VERSION_ID);
 
     @Before
     public void setup() {
-        gameClient = new GameClient(PROJECT_VERSION_ID);
+        gameClient.getServiceManager().removeAll();
     }
 
     @Test

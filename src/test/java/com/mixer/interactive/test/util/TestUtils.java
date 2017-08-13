@@ -4,6 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileReader;
@@ -28,30 +30,30 @@ public class TestUtils {
     /**
      * Property key for retrieving the <code>testLocal</code> setting from the property file
      */
-    private static final String PROPERTY_KEY_TEST_LOCAL = "testLocal";
+    private static final String PROPERTY_KEY_TEST_LOCAL = "LOCAL_TEST";
 
     /**
      * Property key for retrieving the <code>projectVersion</code> setting for an empty Interactive integration from the
      * property file
      */
-    private static final String PROPERTY_KEY_EMPTY_PROJECT_VERSION = "emptyProjectVersion";
+    private static final String PROPERTY_KEY_EMPTY_PROJECT_VERSION = "EMPTY_PROJECT_ID";
 
     /**
      * Property key for retrieving the <code>projectVersion</code> setting for an empty Interactive integration from the
      * property file
      */
-    private static final String PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION = "singleSceneProjectVersion";
+    private static final String PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION = "SINGLE_SCENE_PROJECT_ID";
 
     /**
      * Property key for retrieving the <code>projectVersion</code> setting for an empty Interactive integration from the
      * property file
      */
-    private static final String PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION = "multiSceneProjectVersion";
+    private static final String PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION = "MULTIPLE_SCENE_PROJECT_ID";
 
     /**
      * Property key for retrieving the <code>oauthToken</code> setting from the property file
      */
-    private static final String PROPERTY_KEY_OAUTH_TOKEN = "oauthToken";
+    private static final String PROPERTY_KEY_OAUTH_TOKEN = "INTERACTIVE_OAUTH_TOKEN";
 
     /**
      * URI for localhost testing
@@ -97,20 +99,25 @@ public class TestUtils {
             }
         }
 
-        if (jsonElement != null) {
-            TEST_LOCAL = ((JsonObject) jsonElement).get(PROPERTY_KEY_TEST_LOCAL).getAsBoolean();
-            EMPTY_INTERACTIVE_PROJECT = ((JsonObject) jsonElement).get(PROPERTY_KEY_EMPTY_PROJECT_VERSION).getAsInt();
-            SINGLE_SCENE_INTERACTIVE_PROJECT = ((JsonObject) jsonElement).get(PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION).getAsInt();
-            MULTIPLE_SCENES_INTERACTIVE_PROJECT = ((JsonObject) jsonElement).get(PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION).getAsInt();
-            OAUTH_BEARER_TOKEN = ((JsonObject) jsonElement).get(PROPERTY_KEY_OAUTH_TOKEN).getAsString();
-        }
-        else {
-            TEST_LOCAL = true;
-            EMPTY_INTERACTIVE_PROJECT = 1000;
-            SINGLE_SCENE_INTERACTIVE_PROJECT = 1001;
-            MULTIPLE_SCENES_INTERACTIVE_PROJECT = 1002;
-            OAUTH_BEARER_TOKEN = "foo";
-        }
+        TEST_LOCAL = System.getenv(PROPERTY_KEY_TEST_LOCAL) != null
+                ? Boolean.parseBoolean(System.getenv(PROPERTY_KEY_TEST_LOCAL))
+                : (jsonElement == null || ((JsonObject) jsonElement).get(PROPERTY_KEY_TEST_LOCAL).getAsBoolean());
+
+        OAUTH_BEARER_TOKEN = System.getenv(PROPERTY_KEY_OAUTH_TOKEN) != null
+                ? System.getenv(PROPERTY_KEY_OAUTH_TOKEN)
+                : (jsonElement != null ? ((JsonObject) jsonElement).get(PROPERTY_KEY_OAUTH_TOKEN).getAsString() : "foo");
+
+        EMPTY_INTERACTIVE_PROJECT = System.getenv(PROPERTY_KEY_EMPTY_PROJECT_VERSION) != null
+                ? Integer.parseInt(System.getenv(PROPERTY_KEY_EMPTY_PROJECT_VERSION))
+                : (jsonElement != null ? ((JsonObject) jsonElement).get(PROPERTY_KEY_EMPTY_PROJECT_VERSION).getAsInt() : 1000);
+
+        SINGLE_SCENE_INTERACTIVE_PROJECT = System.getenv(PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION) != null
+                ? Integer.parseInt(System.getenv(PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION))
+                : (jsonElement != null ? ((JsonObject) jsonElement).get(PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION).getAsInt() : 1001);
+
+        MULTIPLE_SCENES_INTERACTIVE_PROJECT = System.getenv(PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION) != null
+                ? Integer.parseInt(System.getenv(PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION))
+                : (jsonElement != null ? ((JsonObject) jsonElement).get(PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION).getAsInt() : 1002);
     }
 
     /**

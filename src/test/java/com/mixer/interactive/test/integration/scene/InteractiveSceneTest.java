@@ -32,7 +32,7 @@ import static com.mixer.interactive.test.util.TestUtils.*;
  * @since       1.0.0
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class InteractiveSceneTests {
+public class InteractiveSceneTest {
 
     /**
      * URI for Interactive host being tested against
@@ -265,7 +265,6 @@ public class InteractiveSceneTests {
     public void deleteScene_valid_reassign_to_default() {
         try {
             multiSceneGameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
-            multiSceneGameClient.using(SCENE_SERVICE_PROVIDER).getScenes().forEach(interactiveScene -> System.out.println(interactiveScene.getSceneID()));
             multiSceneGameClient.using(SCENE_SERVICE_PROVIDER).deleteScene("scene-1", "default");
 
             Set<InteractiveScene> actualScenes = multiSceneGameClient.using(SCENE_SERVICE_PROVIDER).getScenes();

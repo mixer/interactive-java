@@ -8,6 +8,8 @@ import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
 import com.mixer.interactive.util.EndpointUtil;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 
@@ -21,7 +23,12 @@ import static com.mixer.interactive.test.util.TestUtils.*;
  * @since       1.0.0
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class GameClientConnectionTests {
+public class GameClientConnectionTest {
+
+    /**
+     * Logger
+     */
+    private static Logger LOG = LoggerFactory.getLogger(GameClientConnectionTest.class);
 
     /**
      * URI for Interactive host being tested against
@@ -34,25 +41,25 @@ public class GameClientConnectionTests {
     private static GameClient gameClient;
 
     @BeforeClass
-    public static void setup() throws InteractiveNoHostsFoundException {
+    public static void setup_class() throws InteractiveNoHostsFoundException {
         interactiveHost = INTERACTIVE_LOCALHOST;
         if (!TEST_LOCAL) {
             interactiveHost = EndpointUtil.getInteractiveHost().getAddress();
         }
+        LOG.warn("NOTE - RuntimeExceptions will be logged as part of this testing. They are not indications that tests are failing.");
     }
 
     @Before
-    public void setupGameClient() {
+    public void setup_test() {
         gameClient = new GameClient(EMPTY_INTERACTIVE_PROJECT);
     }
 
     @After
-    public void teardownGameClient() {
+    public void teardown_test() {
         gameClient.disconnect();
         gameClient = null;
     }
 
-    /**********         Testing GameClient#connect                  **********/
     @Test
     public void connect_valid() {
         gameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
@@ -109,9 +116,8 @@ public class GameClientConnectionTests {
         Assert.assertFalse(gameClient.isConnected());
     }
 
-    /**********         Testing GameClient#connectAsync             **********/
     @Test
-    public void connectAsync_valid() {
+    public void connect_valid_async() {
         ListenableFuture<?> connectPromise = gameClient.connectAsync(OAUTH_BEARER_TOKEN, interactiveHost);
         Futures.addCallback(connectPromise, new FutureCallback<Object>() {
             @Override
@@ -127,7 +133,7 @@ public class GameClientConnectionTests {
     }
 
     @Test
-    public void connectAsync_invalid_null_oauth_token() {
+    public void connect_invalid_null_oauth_token_async() {
         ListenableFuture<?> connectPromise = gameClient.connectAsync(null, interactiveHost);
         Futures.addCallback(connectPromise, new FutureCallback<Object>() {
             @Override
@@ -143,7 +149,7 @@ public class GameClientConnectionTests {
     }
 
     @Test
-    public void connectAsync_invalid_empty_oauth_token() {
+    public void connect_invalid_empty_oauth_token_async() {
         ListenableFuture<?> connectPromise = gameClient.connectAsync("", interactiveHost);
         Futures.addCallback(connectPromise, new FutureCallback<Object>() {
             @Override
@@ -159,7 +165,7 @@ public class GameClientConnectionTests {
     }
 
     @Test
-    public void connectAsync_invalid_random_oauth_token() {
+    public void connect_invalid_random_oauth_token_async() {
         ListenableFuture<?> connectPromise = gameClient.connectAsync("afafpafjafhakjcn;avn74739i3jfnf", interactiveHost);
         Futures.addCallback(connectPromise, new FutureCallback<Object>() {
             @Override
@@ -175,7 +181,7 @@ public class GameClientConnectionTests {
     }
 
     @Test
-    public void connectAsync_invalid_null_interactive_host() {
+    public void connect_invalid_null_interactive_host_async() {
         ListenableFuture<?> connectPromise = gameClient.connectAsync(OAUTH_BEARER_TOKEN, null, null);
         Futures.addCallback(connectPromise, new FutureCallback<Object>() {
             @Override
@@ -191,7 +197,7 @@ public class GameClientConnectionTests {
     }
 
     @Test
-    public void connectAsync_invalid_empty_interactive_host() {
+    public void connect_invalid_empty_interactive_host_async() {
         ListenableFuture<?> connectPromise = gameClient.connectAsync(OAUTH_BEARER_TOKEN, null, URI.create(""));
         Futures.addCallback(connectPromise, new FutureCallback<Object>() {
             @Override
@@ -207,7 +213,7 @@ public class GameClientConnectionTests {
     }
 
     @Test
-    public void connectAsync_invalid_not_an_interactive_host() {
+    public void connect_invalid_not_an_interactive_host_async() {
         ListenableFuture<?> connectPromise = gameClient.connectAsync(OAUTH_BEARER_TOKEN, null, URI.create("ws://mixer.com/"));
         Futures.addCallback(connectPromise, new FutureCallback<Object>() {
             @Override
@@ -223,7 +229,7 @@ public class GameClientConnectionTests {
     }
 
     @Test
-    public void connectAsync_invalid_scheme_for_interactive_host() {
+    public void connect_invalid_scheme_for_interactive_host_async() {
         ListenableFuture<?> connectPromise = gameClient.connectAsync(OAUTH_BEARER_TOKEN, null, URI.create("https://mixer.com/"));
         Futures.addCallback(connectPromise, new FutureCallback<Object>() {
             @Override
@@ -238,8 +244,6 @@ public class GameClientConnectionTests {
         });
     }
 
-    /**********         Testing GameClient#disconnect               **********/
-
     @Test
     public void disconnect() {
         gameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
@@ -249,10 +253,8 @@ public class GameClientConnectionTests {
         Assert.assertFalse(gameClient.isConnected());
     }
 
-    /**********         Testing GameClient#disconnectAsync          **********/
-
     @Test
-    public void disconnectAsync() {
+    public void disconnect_async() {
         gameClient.connect(OAUTH_BEARER_TOKEN, interactiveHost);
         waitForWebSocket();
         Assert.assertTrue(gameClient.isConnected());
