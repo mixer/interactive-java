@@ -8,6 +8,10 @@ For an introduction to Interactive 2.0, checkout the [reference docs](https://de
 
 The `interactive-java` repository currently is in a pre-release state. Please refer to the [release notes](https://github.com/mixer/interactive-java/releases) for more information.
 
+## Documentation
+
+Javadoc for the SDK is available [here](https://mixer.github.io/interactive-java/).
+
 ## Development
 
 We use [Maven](http://maven.apache.org/) to build the client.  Once you have [Maven installed](http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html), there are two easy steps to getting the
