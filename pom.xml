@@ -6,7 +6,7 @@
 
     <groupId>com.mixer</groupId>
     <artifactId>mixer-interactive-api</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <licenses>
         <license>
@@ -25,7 +25,7 @@
         <junit.version>4.12</junit.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
+        
         <scm-publish.scmBranch>gh-pages</scm-publish.scmBranch>
         <scm-publish.pubScmUrl>scm:git:git@github.com:mixer/interactive-java.git</scm-publish.pubScmUrl>
         <scm-publish.repoUrl>https://github.com/mixer/interactive-java</scm-publish.repoUrl>

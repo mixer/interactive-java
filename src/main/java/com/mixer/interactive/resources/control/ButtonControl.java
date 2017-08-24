@@ -40,7 +40,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
     /**
      * Cooldown that lasts until the provided UTC unix timestamp
      */
-    private Integer cooldown;
+    private Long cooldown;
 
     /**
      * Initializes a new <code>ButtonControl</code>.
@@ -183,7 +183,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      *
      * @since   1.0.0
      */
-    public Integer getCooldown() {
+    public Long getCooldown() {
         return cooldown;
     }
 
@@ -198,8 +198,8 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      *
      * @since   1.0.0
      */
-    public ButtonControl setCooldown(Integer cooldown) {
-        this.cooldown = cooldown;
+    public ButtonControl setCooldown(Number cooldown) {
+        this.cooldown = cooldown.longValue();
         return getThis();
     }
 
@@ -215,7 +215,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      * @since   1.0.0
      */
     public ButtonControl setCooldown(Instant cooldown) {
-        this.cooldown = Math.toIntExact(cooldown.toEpochMilli());
+        this.cooldown = cooldown.toEpochMilli();
         return getThis();
     }
 
@@ -230,7 +230,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      * @since   1.0.0
      */
     public ButtonControl addToCooldown(Duration duration) {
-        return setCooldown(this.cooldown + Math.toIntExact(duration.toMillis()));
+        return setCooldown(this.cooldown + duration.toMillis());
     }
 
     /**
