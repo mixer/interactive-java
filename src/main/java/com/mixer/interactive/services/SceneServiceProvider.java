@@ -260,7 +260,7 @@ public class SceneServiceProvider extends AbstractServiceProvider {
         }
 
         JsonObject jsonParams = new JsonObject();
-        jsonParams.add(PARAM_KEY_SCENES, GameClient.GSON.toJsonTree(scenes, InteractiveScene[].class));
+        jsonParams.add(PARAM_KEY_SCENES, GameClient.GSON.toJsonTree(scenes));
         return gameClient.using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.CREATE_SCENES, jsonParams, PARAM_KEY_SCENES, SCENE_SET_TYPE);
     }
 
@@ -521,7 +521,7 @@ public class SceneServiceProvider extends AbstractServiceProvider {
         }
 
         JsonObject jsonParams = new JsonObject();
-        jsonParams.add(PARAM_KEY_SCENES, GameClient.GSON.toJsonTree(scenes, InteractiveScene[].class));
+        jsonParams.add(PARAM_KEY_SCENES, GameClient.GSON.toJsonTree(scenes));
         jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
         return gameClient.using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.UPDATE_SCENES, jsonParams, PARAM_KEY_SCENES, SCENE_SET_TYPE);
     }
