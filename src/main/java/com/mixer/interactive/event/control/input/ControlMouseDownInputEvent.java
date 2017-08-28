@@ -1,8 +1,8 @@
 package com.mixer.interactive.event.control.input;
 
 import com.mixer.interactive.resources.control.InteractiveControlInput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Interactive event posted by the Interactive service when a control has a <code>mousedown</code> input supplied.
@@ -16,7 +16,7 @@ public class ControlMouseDownInputEvent extends ControlInputEvent {
     /**
      * Logger.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(ControlMouseDownInputEvent.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * Keycode the participant used when interacting with the control
@@ -40,7 +40,7 @@ public class ControlMouseDownInputEvent extends ControlInputEvent {
         super(participantID, transactionID, controlInput);
 
         if (!input.getRawInput().containsKey("button")) {
-            LOG.error("Could not find required parameters expected for ControlMouseDownInputEvent");
+            LOG.fatal("Could not find required parameters expected for ControlMouseDownInputEvent");
             throw new IllegalArgumentException("Could not find required parameters expected for ControlMouseDownInputEvent");
         }
         this.button = input.getRawInput().get("button").getAsInt();

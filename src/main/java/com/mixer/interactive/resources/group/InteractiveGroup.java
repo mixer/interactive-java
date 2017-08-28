@@ -16,8 +16,8 @@ import com.mixer.interactive.resources.IInteractiveDeletable;
 import com.mixer.interactive.resources.IInteractiveUpdatable;
 import com.mixer.interactive.resources.InteractiveResource;
 import com.mixer.interactive.resources.scene.InteractiveScene;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -37,7 +37,7 @@ public class InteractiveGroup
     /**
      * Logger.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(InteractiveGroup.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * Constant representing the default group
@@ -81,7 +81,7 @@ public class InteractiveGroup
             this.groupID = groupID;
         }
         else {
-            LOG.error("GroupID must be non-null and non-empty");
+            LOG.fatal("GroupID must be non-null and non-empty");
             throw new IllegalArgumentException("GroupID must be non-null and non-empty");
         }
 

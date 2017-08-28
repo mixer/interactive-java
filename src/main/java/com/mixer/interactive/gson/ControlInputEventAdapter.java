@@ -6,8 +6,8 @@ import com.mixer.interactive.event.control.input.ControlMouseDownInputEvent;
 import com.mixer.interactive.event.control.input.ControlMouseUpInputEvent;
 import com.mixer.interactive.event.control.input.ControlMoveInputEvent;
 import com.mixer.interactive.resources.control.InteractiveControlInput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Type;
 
@@ -27,7 +27,7 @@ public class ControlInputEventAdapter implements JsonDeserializer<ControlInputEv
     /**
      * Logger.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(ControlInputEventAdapter.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * {@inheritDoc}
@@ -38,7 +38,7 @@ public class ControlInputEventAdapter implements JsonDeserializer<ControlInputEv
     public ControlInputEvent deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
 
         if (!json.isJsonObject()) {
-            LOG.error("Unable to parse an ControlInputEvent");
+            LOG.fatal("Unable to parse an ControlInputEvent");
             throw new JsonParseException("Unable to parse an ControlInputEvent");
         }
 

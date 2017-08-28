@@ -6,11 +6,11 @@ import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.protocol.MethodPacket;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class FakeParticipantClient extends WebSocketClient {
     /**
      * Logger
      */
-    private static final Logger LOG = LoggerFactory.getLogger(FakeParticipantClient.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * Random number generator
@@ -72,7 +72,7 @@ public class FakeParticipantClient extends WebSocketClient {
      */
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
-        LOG.debug("Successfully connected a fake participant ('{}') to '{}'", fakeParticipant, getURI());
+        LOG.debug(String.format("Successfully connected a fake participant ('%s') to '%s'", fakeParticipant, getURI()));
     }
 
     /**
@@ -92,7 +92,7 @@ public class FakeParticipantClient extends WebSocketClient {
      */
     @Override
     public void onClose(int code, String reason, boolean remote) {
-        LOG.debug("Fake participant '{}' disconnected (code: {}, reason: {})", fakeParticipant, code, reason);
+        LOG.debug(String.format("Fake participant '%s' disconnected (code: %s, reason: %s)", fakeParticipant, code, reason));
     }
 
     /**

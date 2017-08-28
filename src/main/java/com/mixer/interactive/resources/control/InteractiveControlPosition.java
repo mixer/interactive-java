@@ -2,8 +2,8 @@ package com.mixer.interactive.resources.control;
 
 import com.google.common.base.Objects;
 import com.google.common.hash.Hashing;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 
@@ -20,7 +20,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
     /**
      * Logger.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(InteractiveControlPosition.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * Default Interactive control canvas size
@@ -125,7 +125,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
             this.size = size;
         }
         else {
-            LOG.error("Invalid size");
+            LOG.fatal("Invalid size");
             throw new IllegalArgumentException("Invalid canvas size");
         }
 

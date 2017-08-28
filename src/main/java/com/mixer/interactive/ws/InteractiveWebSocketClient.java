@@ -34,11 +34,11 @@ import com.mixer.interactive.protocol.MethodPacket;
 import com.mixer.interactive.protocol.ReplyPacket;
 import com.mixer.interactive.resources.core.CompressionScheme;
 import com.mixer.interactive.util.compression.CompressionUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft_6455;
 import org.java_websocket.handshake.ServerHandshake;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -64,7 +64,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     /**
      * Logger.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(InteractiveWebSocketClient.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * Type object used to serialize/de-serialize a <code>Set</code> of <code>InteractivePacket</code>.
@@ -247,7 +247,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     @Override
     public void onOpen(ServerHandshake serverHandshake) {
-        LOG.info("Connected to Interactive integration (project version '{}') on host '{}'", gameClient.getProjectVersionId(), getURI());
+        LOG.info(String.format("Connected to Interactive integration (project version '%s') on host '%s'", gameClient.getProjectVersionId(), getURI()));
         gameClient.getEventBus().post(new ConnectionOpenEvent(gameClient.getProjectVersionId(), getURI(), serverHandshake.getHttpStatus(), serverHandshake.getHttpStatusMessage()));
     }
 
@@ -263,7 +263,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     @Override
     public void send(String message) {
-        LOG.debug("PROJECT_ID[{}] - SEND[RAW]: {}", gameClient.getProjectVersionId(), message);
+        LOG.debug(String.format("PROJECT_ID[%s] - SEND[RAW]: %s", gameClient.getProjectVersionId(), message));
         super.send(message);
     }
 
@@ -279,10 +279,10 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     @Override
     public void onMessage(ByteBuffer bytes) {
-        LOG.debug("PROJECT_ID[{}] - RCVD[bytes]: '{}'", gameClient.getProjectVersionId(), bytes.array());
+        LOG.debug(String.format("PROJECT_ID[%s] - RCVD[bytes]: '%s'", gameClient.getProjectVersionId(), Arrays.toString(bytes.array())));
         try {
             String message = CompressionUtil.decode(compressionScheme, bytes.array());
-            LOG.debug("PROJECT_ID[{}] - RCVD[{}]: {}", gameClient.getProjectVersionId(), compressionScheme, message);
+            LOG.debug(String.format("PROJECT_ID[%s] - RCVD[%s]: %s", gameClient.getProjectVersionId(), compressionScheme, message));
             onMessage(message);
         }
         catch (IOException e) {
@@ -302,7 +302,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     @Override
     public void onMessage(String message) {
-        LOG.debug("PROJECT_ID[{}] - RCVD[TEXT]: {}'", gameClient.getProjectVersionId(), message);
+        LOG.debug(String.format("PROJECT_ID[%s] - RCVD[TEXT]: %s'", gameClient.getProjectVersionId(), message));
 
         // Parse packets from the message
         List<InteractivePacket> packets = new ArrayList<>();
@@ -334,7 +334,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     @Override
     public void onClose(int code, String reason, boolean closedRemotely) {
-        LOG.info("Connection to the Interactive service closed (project version id: {}, code: {}, reason: '{}')", gameClient.getProjectVersionId(), code, reason);
+        LOG.info(String.format("Connection to the Interactive service closed (project version id: %s, code: %s, reason: '%s')", gameClient.getProjectVersionId(), code, reason));
         gameClient.getEventBus().post(new ConnectionClosedEvent(gameClient.getProjectVersionId(), getURI(), code, reason, closedRemotely));
     }
 

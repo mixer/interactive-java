@@ -6,10 +6,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
 import com.mixer.interactive.util.EndpointUtil;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.*;
 import org.junit.runners.MethodSorters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 
@@ -28,7 +28,7 @@ public class GameClientConnectionTest {
     /**
      * Logger
      */
-    private static Logger LOG = LoggerFactory.getLogger(GameClientConnectionTest.class);
+    private static Logger LOG = LogManager.getLogger();
 
     /**
      * URI for Interactive host being tested against

@@ -2,8 +2,8 @@ package com.mixer.interactive.gson;
 
 import com.google.gson.*;
 import com.mixer.interactive.event.UndefinedInteractiveEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ public class UndefinedInteractiveEventAdapter implements JsonDeserializer<Undefi
     /**
      * Logger.
      */
-    private static final Logger LOG = LoggerFactory.getLogger(UndefinedInteractiveEventAdapter.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * {@inheritDoc}
@@ -32,7 +32,7 @@ public class UndefinedInteractiveEventAdapter implements JsonDeserializer<Undefi
     public UndefinedInteractiveEvent deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 
         if (!json.isJsonObject()) {
-            LOG.error("Unable to parse an UndefinedInteractiveEvent");
+            LOG.fatal("Unable to parse an UndefinedInteractiveEvent");
             throw new JsonParseException("Unable to parse an UndefinedInteractiveEvent");
         }
 

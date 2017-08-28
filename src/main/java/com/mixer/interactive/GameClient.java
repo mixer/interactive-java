@@ -24,8 +24,8 @@ import com.mixer.interactive.services.*;
 import com.mixer.interactive.services.ServiceManager;
 import com.mixer.interactive.util.EndpointUtil;
 import com.mixer.interactive.ws.InteractiveWebSocketClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -77,7 +77,7 @@ public class GameClient {
     /**
      * Logger
      */
-    private static final Logger LOG = LoggerFactory.getLogger(GameClient.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * The default size for the scheduled thread pool.

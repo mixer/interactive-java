@@ -16,13 +16,12 @@ import com.mixer.interactive.resources.core.BandwidthThrottle;
 import com.mixer.interactive.resources.group.InteractiveGroup;
 import com.mixer.interactive.resources.participant.InteractiveParticipant;
 import com.mixer.interactive.resources.scene.InteractiveScene;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.net.URL;
 import java.util.*;
-import java.util.function.Consumer;
 
 import static com.mixer.interactive.GameClient.*;
 
@@ -39,7 +38,7 @@ public class ExampleInteractiveClient {
     /**
      * Logger
      */
-    private static final Logger LOG = LoggerFactory.getLogger(ExampleInteractiveClient.class);
+    private static final Logger LOG = LogManager.getLogger();
 
     /**
      * Default project version id to be used if one cannot be retrieved from the properties file
@@ -174,7 +173,7 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             case "getThrottleState": {
-                                GAME_CLIENT.getThrottleState().forEach((key, value) -> LOG.info("Method[{}], {}", key, value));
+                                GAME_CLIENT.getThrottleState().forEach((key, value) -> LOG.info(String.format("Method[%s], %s", key, value)));
                                 break;
                             }
                             case "setBandwidthThrottle": {
@@ -319,7 +318,7 @@ public class ExampleInteractiveClient {
                                 break;
                             }
                             default: {
-                                LOG.error("Unknown command '{}', please try again", command);
+                                LOG.error(String.format("Unknown command '%s', please try again", command));
                                 break;
                             }
                         }
