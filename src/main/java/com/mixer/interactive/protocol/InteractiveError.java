@@ -83,20 +83,4 @@ public class InteractiveError {
     public String getPath() {
         return path;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>InteractiveError</code>.
-     *
-     * @return  <code>String</code> representation of this <code>InteractiveError</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("code", code)
-                .add("message", message)
-                .add("path", path)
-                .toString();
-    }
 }

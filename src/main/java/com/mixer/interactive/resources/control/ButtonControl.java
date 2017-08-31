@@ -275,28 +275,4 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
         }
         return getThis();
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>ButtonControl</code>.
-     *
-     * @return  <code>String</code> representation of this <code>ButtonControl</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("controlID", getControlID())
-                .add("sceneID", getSceneID())
-                .add("kind", getKind())
-                .add("disabled", isDisabled())
-                .add("keycode", keycode)
-                .add("text", text)
-                .add("cost", cost)
-                .add("progress", progress)
-                .add("cooldown", cooldown)
-                .add("position", getPositions())
-                .add("meta", getMeta())
-                .toString();
-    }
 }

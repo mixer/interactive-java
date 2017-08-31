@@ -85,21 +85,4 @@ public class InteractiveControlInput {
     public Map<String, JsonElement> getRawInput() {
         return input;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>InteractiveControlInput</code>.
-     *
-     * @return  <code>String</code> representation of this <code>InteractiveControlInput</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("controlID", controlID)
-                .add("event", event)
-                .add("input", input)
-                .omitNullValues()
-                .toString();
-    }
 }

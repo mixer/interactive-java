@@ -414,20 +414,4 @@ public class InteractiveGroup
     public boolean equals(Object o) {
         return o instanceof InteractiveGroup && this.compareTo((InteractiveGroup) o) == 0;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>InteractiveGroup</code>.
-     *
-     * @return  <code>String</code> representation of this <code>InteractiveGroup</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("groupID", groupID)
-                .add("sceneID", sceneID)
-                .add("meta", getMeta())
-                .toString();
-    }
 }

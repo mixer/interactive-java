@@ -387,26 +387,4 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
     public boolean equals(Object o) {
         return o instanceof InteractiveParticipant && this.compareTo((InteractiveParticipant) o) == 0;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>InteractiveParticipant</code>.
-     *
-     * @return  <code>String</code> representation of this <code>InteractiveParticipant</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("sessionID", sessionID)
-                .add("userID", userID)
-                .add("username", username)
-                .add("level", level)
-                .add("lastInputAt", lastInputAt)
-                .add("connectedAt", connectedAt)
-                .add("disabled", disabled)
-                .add("groupID", groupID)
-                .add("meta", getMeta())
-                .toString();
-    }
 }

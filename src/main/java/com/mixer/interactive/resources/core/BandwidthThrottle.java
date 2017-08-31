@@ -64,19 +64,4 @@ public class BandwidthThrottle {
     public int getDrainRate() {
         return drainRate;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>BandwidthThrottle</code>.
-     *
-     * @return  <code>String</code> representation of this <code>BandwidthThrottle</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("capacity", capacity)
-                .add("drainRate", drainRate)
-                .toString();
-    }
 }

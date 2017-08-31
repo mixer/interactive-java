@@ -175,25 +175,4 @@ public class JoystickControl extends InteractiveControl<JoystickControl> {
         }
         return getThis();
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>JoystickControl</code>.
-     *
-     * @return  <code>String</code> representation of this <code>JoystickControl</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("controlID", getControlID())
-                .add("sceneID", getSceneID())
-                .add("kind", getKind())
-                .add("disabled", isDisabled())
-                .add("sampleRate", sampleRate)
-                .add("angle", angle)
-                .add("intensity", intensity)
-                .add("meta", getMeta())
-                .toString();
-    }
 }

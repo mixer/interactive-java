@@ -162,22 +162,4 @@ public class MethodPacket extends InteractivePacket {
     public boolean getDiscard() {
         return discard;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>MethodPacket</code>.
-     *
-     * @return  <code>String</code> representation of this <code>MethodPacket</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("id", getPacketID())
-                .add("type", getType())
-                .add("method", method)
-                .add("params", params)
-                .add("discard", discard)
-                .toString();
-    }
 }

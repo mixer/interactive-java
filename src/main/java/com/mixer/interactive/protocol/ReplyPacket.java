@@ -122,21 +122,4 @@ public class ReplyPacket extends InteractivePacket {
     public InteractiveError getError() {
         return error;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>ReplyPacket</code>.
-     *
-     * @return  <code>String</code> representation of this <code>ReplyPacket</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("id", getPacketID())
-                .add("type", getType())
-                .add("result", result)
-                .add("error", error)
-                .toString();
-    }
 }

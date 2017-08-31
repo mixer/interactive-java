@@ -322,22 +322,4 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
     public boolean equals(Object o) {
         return o instanceof InteractiveControlPosition && this.compareTo((InteractiveControlPosition) o) == 0;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>InteractiveControlPosition</code>.
-     *
-     * @return  <code>String</code> representation of this <code>InteractiveControlPosition</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("size", size)
-                .add("width", width)
-                .add("height", height)
-                .add("x", x)
-                .add("y", y)
-                .toString();
-    }
 }

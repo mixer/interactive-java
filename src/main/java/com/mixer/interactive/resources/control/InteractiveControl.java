@@ -682,23 +682,4 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
     public boolean equals(Object o) {
         return o instanceof InteractiveControl && this.compareTo((InteractiveControl) o) == 0;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>InteractiveControl</code>.
-     *
-     * @return  <code>String</code> representation of this <code>InteractiveControl</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("controlID", getControlID())
-                .add("sceneID", getSceneID())
-                .add("kind", getKind())
-                .add("disabled", isDisabled())
-                .add("position", getPositions())
-                .add("meta", getMeta())
-                .toString();
-    }
 }

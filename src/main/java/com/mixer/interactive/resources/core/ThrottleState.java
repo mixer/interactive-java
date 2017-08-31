@@ -61,19 +61,4 @@ public class ThrottleState {
     public int getRejectedPacketCount() {
         return rejected;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>ThrottleState</code>.
-     *
-     * @return  <code>String</code> representation of this <code>ThrottleState</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("inserted", inserted)
-                .add("rejected", rejected)
-                .toString();
-    }
 }

@@ -569,21 +569,4 @@ public class InteractiveScene
     public boolean equals(Object o) {
         return o instanceof InteractiveScene && this.compareTo((InteractiveScene) o) == 0;
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>InteractiveScene</code>.
-     *
-     * @return  <code>String</code> representation of this <code>InteractiveScene</code>
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("sceneID", sceneID)
-                .add("groups", groups)
-                .add("controls", controls)
-                .add("meta", getMeta())
-                .toString();
-    }
 }

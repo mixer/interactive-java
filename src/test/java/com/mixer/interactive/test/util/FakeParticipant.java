@@ -82,19 +82,4 @@ public class FakeParticipant {
         int id = random.nextInt(100000);
         return new FakeParticipant(id, "Participant" + id, random.nextInt(100));
     }
-
-    /**
-     * Returns a <code>String</code> representation of this <code>FakeParticipant</code>.
-     *
-     * @return  <code>String</code> representation of this <code>FakeParticipant</code>
-     * @since   1.0.0
-     */
-    @Override
-    public String toString() {
-        return Objects.toStringHelper(this)
-                .add("id", id)
-                .add("username", username)
-                .add("xp", xp)
-                .toString();
-    }
 }
