@@ -5,6 +5,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.*;
 import com.google.gson.*;
 import com.mixer.interactive.event.UndefinedInteractiveEvent;
+import com.mixer.interactive.event.control.input.ControlInputEvent;
 import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
@@ -61,6 +62,7 @@ public class GameClient {
             .registerTypeAdapter(InteractiveControlType.class, new InteractiveControlTypeAdapter())
             .registerTypeAdapter(InteractiveControlInput.class, new InteractiveControlInputAdapter())
             .registerTypeAdapter(UndefinedInteractiveEvent.class, new UndefinedInteractiveEventAdapter())
+            .registerTypeAdapter(ControlInputEvent.class, new ControlInputEventAdapter())
             .serializeNulls()
             .create();
 
