@@ -1,6 +1,5 @@
 package com.mixer.interactive.resources.core;
 
-import com.google.common.base.Objects;
 import com.mixer.interactive.GameClient;
 
 import java.util.Map;
@@ -12,7 +11,6 @@ import java.util.Map;
  * @author      Microsoft Corporation
  *
  * @see         GameClient#setBandwidthThrottle(Map)
- * @see         GameClient#setBandwidthThrottleAsync(Map)
  *
  * @since       1.0.0
  */

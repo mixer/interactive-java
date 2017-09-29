@@ -4,6 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
+import com.mixer.interactive.util.EndpointUtil;
 
 import java.io.File;
 import java.io.FileReader;
@@ -26,62 +28,54 @@ public class TestUtils {
     private static final String PROPERTY_FILE_NAME = "interactive-project.json";
 
     /**
-     * Property key for retrieving the <code>testLocal</code> setting from the property file
+     * Property key for retrieving the <code>SERVICE_URI</code> property
      */
-    private static final String PROPERTY_KEY_TEST_LOCAL = "LOCAL_TEST";
+    private static final String PROPERTY_KEY_INTERACTIVE_SERVICE = "SERVICE_URI";
 
     /**
-     * Property key for retrieving the <code>projectVersion</code> setting for an empty Interactive integration from the
-     * property file
+     * Property key for retrieving the <code>PROJECT_ID</code> property
      */
-    private static final String PROPERTY_KEY_EMPTY_PROJECT_VERSION = "EMPTY_PROJECT_ID";
+    private static final String PROPERTY_KEY_PROJECT_ID = "PROJECT_ID";
 
     /**
-     * Property key for retrieving the <code>projectVersion</code> setting for an empty Interactive integration from the
-     * property file
+     * Property key for retrieving the <code>OAUTH_TOKEN</code> property
      */
-    private static final String PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION = "SINGLE_SCENE_PROJECT_ID";
+    private static final String PROPERTY_KEY_OAUTH_TOKEN = "OAUTH_TOKEN";
 
     /**
-     * Property key for retrieving the <code>projectVersion</code> setting for an empty Interactive integration from the
-     * property file
+     * Property key for retrieving the <code>CHANNEL_ID</code> property
      */
-    private static final String PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION = "MULTIPLE_SCENE_PROJECT_ID";
-
-    /**
-     * Property key for retrieving the <code>oauthToken</code> setting from the property file
-     */
-    private static final String PROPERTY_KEY_OAUTH_TOKEN = "INTERACTIVE_OAUTH_TOKEN";
+    private static final String PROPERTY_KEY_CHANNEL_ID = "CHANNEL_ID";
 
     /**
      * URI for localhost testing
      */
-    public static final URI INTERACTIVE_LOCALHOST = URI.create("ws://127.0.0.1:3000/gameClient");
+    private static final URI INTERACTIVE_LOCALHOST = URI.create("ws://localhost:3000/gameClient");
 
     /**
-     * Whether or not to test against a locally running Interactive service
+     * The URI of the Interactive service used for testing
      */
-    public static final boolean TEST_LOCAL;
+    public static final URI INTERACTIVE_SERVICE_URI;
 
     /**
-     * Project version ID for an Interactive integration with no content
+     * The URI that mock participants connect to
      */
-    public static final int EMPTY_INTERACTIVE_PROJECT;
+    static final URI INTERACTIVE_PARTICIPANT_URI;
 
     /**
-     * Project version ID for an Interactive integration with a single scene, populated with controls
+     * Project version ID for the testing Interactive integration
      */
-    public static final int SINGLE_SCENE_INTERACTIVE_PROJECT;
-
-    /**
-     * Project version ID for an Interactive integration with multiple scenes, populated with controls
-     */
-    public static final int MULTIPLE_SCENES_INTERACTIVE_PROJECT;
+    public static final int INTERACTIVE_PROJECT_ID;
 
     /**
      * OAuth Bearer token
      */
     public static final String OAUTH_BEARER_TOKEN;
+
+    /**
+     * Channel Id that mock participants will connect to
+     */
+    private static final int CHANNEL_ID;
 
     static {
         URL propertyFileURL = ClassLoader.getSystemClassLoader().getResource(PROPERTY_FILE_NAME);
@@ -97,25 +91,44 @@ public class TestUtils {
             }
         }
 
-        TEST_LOCAL = System.getenv(PROPERTY_KEY_TEST_LOCAL) != null
-                ? Boolean.parseBoolean(System.getenv(PROPERTY_KEY_TEST_LOCAL))
-                : (jsonElement == null || ((JsonObject) jsonElement).get(PROPERTY_KEY_TEST_LOCAL).getAsBoolean());
+        if (System.getenv(PROPERTY_KEY_INTERACTIVE_SERVICE) != null) {
+            INTERACTIVE_SERVICE_URI = URI.create(System.getenv(PROPERTY_KEY_INTERACTIVE_SERVICE));
+        }
+        else {
+            if (jsonElement != null && jsonElement instanceof JsonObject && ((JsonObject) jsonElement).get(PROPERTY_KEY_INTERACTIVE_SERVICE) != null) {
+                INTERACTIVE_SERVICE_URI = URI.create(((JsonObject) jsonElement).get(PROPERTY_KEY_INTERACTIVE_SERVICE).getAsString());
+            }
+            else {
+                URI serviceHost;
+                try {
+                    serviceHost = EndpointUtil.getInteractiveHost().getAddress();
+                }
+                catch (InteractiveNoHostsFoundException e) {
+                    serviceHost = INTERACTIVE_LOCALHOST;
+                }
+                INTERACTIVE_SERVICE_URI = serviceHost;
+            }
+        }
 
         OAUTH_BEARER_TOKEN = System.getenv(PROPERTY_KEY_OAUTH_TOKEN) != null
                 ? System.getenv(PROPERTY_KEY_OAUTH_TOKEN)
-                : (jsonElement != null ? ((JsonObject) jsonElement).get(PROPERTY_KEY_OAUTH_TOKEN).getAsString() : "foo");
+                : (jsonElement != null && jsonElement instanceof JsonObject && ((JsonObject) jsonElement).get(PROPERTY_KEY_OAUTH_TOKEN) != null
+                    ? ((JsonObject) jsonElement).get(PROPERTY_KEY_OAUTH_TOKEN).getAsString()
+                    : "foo");
 
-        EMPTY_INTERACTIVE_PROJECT = System.getenv(PROPERTY_KEY_EMPTY_PROJECT_VERSION) != null
-                ? Integer.parseInt(System.getenv(PROPERTY_KEY_EMPTY_PROJECT_VERSION))
-                : (jsonElement != null ? ((JsonObject) jsonElement).get(PROPERTY_KEY_EMPTY_PROJECT_VERSION).getAsInt() : 1000);
+        INTERACTIVE_PROJECT_ID = System.getenv(PROPERTY_KEY_PROJECT_ID) != null
+                ? Integer.parseInt(System.getenv(PROPERTY_KEY_PROJECT_ID))
+                : (jsonElement != null && jsonElement instanceof JsonObject && ((JsonObject) jsonElement).get(PROPERTY_KEY_PROJECT_ID) != null
+                    ? ((JsonObject) jsonElement).get(PROPERTY_KEY_PROJECT_ID).getAsInt()
+                    : 1000);
 
-        SINGLE_SCENE_INTERACTIVE_PROJECT = System.getenv(PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION) != null
-                ? Integer.parseInt(System.getenv(PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION))
-                : (jsonElement != null ? ((JsonObject) jsonElement).get(PROPERTY_KEY_SINGLE_SCENE_PROJECT_VERSION).getAsInt() : 1001);
+        CHANNEL_ID = System.getenv(PROPERTY_KEY_CHANNEL_ID) != null
+                ? Integer.parseInt(System.getenv(PROPERTY_KEY_CHANNEL_ID))
+                : (jsonElement != null && jsonElement instanceof JsonObject && ((JsonObject) jsonElement).get(PROPERTY_KEY_CHANNEL_ID) != null
+                ? ((JsonObject) jsonElement).get(PROPERTY_KEY_CHANNEL_ID).getAsInt()
+                : 0);
 
-        MULTIPLE_SCENES_INTERACTIVE_PROJECT = System.getenv(PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION) != null
-                ? Integer.parseInt(System.getenv(PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION))
-                : (jsonElement != null ? ((JsonObject) jsonElement).get(PROPERTY_KEY_MULTIPLE_SCENE_PROJECT_VERSION).getAsInt() : 1002);
+        INTERACTIVE_PARTICIPANT_URI = URI.create(String.format("%s://%s/participant?channel=%s", INTERACTIVE_SERVICE_URI.getScheme(), INTERACTIVE_SERVICE_URI.getAuthority(), CHANNEL_ID));
     }
 
     /**
@@ -126,7 +139,7 @@ public class TestUtils {
      */
     public static void waitForWebSocket() {
         try {
-            Thread.sleep(75);
+            Thread.sleep(250);
         }
         catch (InterruptedException e) {
             e.printStackTrace();

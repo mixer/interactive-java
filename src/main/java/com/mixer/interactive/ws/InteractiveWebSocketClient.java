@@ -2,7 +2,6 @@ package com.mixer.interactive.ws;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mixer.interactive.GameClient;
@@ -45,6 +44,7 @@ import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
@@ -77,9 +77,10 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     private static final JsonParser JSON_PARSER = new JsonParser();
 
     /**
-     * <code>ConcurrentMap</code> of waiting <code>SettableFuture</code> promises and the IDs for the packets that made the request
+     * <code>ConcurrentMap</code> of waiting <code>CompletableFuture</code> promises and the IDs for the packets that
+     * made the request
      */
-    private final ConcurrentMap<Integer, SettableFuture<ReplyPacket>> waitingPromisesMap = new ConcurrentSkipListMap<>();
+    private final ConcurrentMap<Integer, CompletableFuture<ReplyPacket>> waitingFuturesMap = new ConcurrentSkipListMap<>();
 
     /**
      * The <code>GameClient</code> that owns this websocket client
@@ -167,16 +168,16 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     }
 
     /**
-     * Retrieves the <code>ConcurrentMap</code> of waiting <code>SettableFuture</code> promises and the IDs for the
+     * Retrieves the <code>ConcurrentMap</code> of waiting <code>CompletableFuture</code> promises and the IDs for the
      * packets that made the request.
      *
-     * @return  <code>ConcurrentMap</code> of waiting <code>SettableFuture</code> promises and the IDs for the packets
-     *          that made the request
+     * @return  <code>ConcurrentMap</code> of waiting <code>CompletableFuture</code> promises and the IDs for the
+     *          packets that made the request
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
-    public ConcurrentMap<Integer, SettableFuture<ReplyPacket>> getWaitingPromisesMap() {
-        return waitingPromisesMap;
+    public ConcurrentMap<Integer, CompletableFuture<ReplyPacket>> getWaitingFuturesMap() {
+        return waitingFuturesMap;
     }
 
     /**
@@ -302,7 +303,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     @Override
     public void onMessage(String message) {
-        LOG.debug(String.format("PROJECT_ID[%s] - RCVD[TEXT]: %s'", gameClient.getProjectVersionId(), message));
+        LOG.debug(String.format("PROJECT_ID[%s] - RCVD[TEXT]: %s", gameClient.getProjectVersionId(), message));
 
         // Parse packets from the message
         List<InteractivePacket> packets = new ArrayList<>();
@@ -386,10 +387,10 @@ public class InteractiveWebSocketClient extends WebSocketClient {
                     gameClient.getEventBus().post(interactiveEvent);
                 }
             }
-            else if (packet instanceof ReplyPacket && waitingPromisesMap.containsKey(packet.getPacketID())) {
-                SettableFuture<ReplyPacket> sendRequest = waitingPromisesMap.remove(packet.getPacketID());
+            else if (packet instanceof ReplyPacket && getWaitingFuturesMap().containsKey(packet.getPacketID())) {
+                CompletableFuture<ReplyPacket> sendRequest = getWaitingFuturesMap().remove(packet.getPacketID());
                 if (!sendRequest.isDone()) {
-                    sendRequest.set((ReplyPacket) packet);
+                    sendRequest.complete((ReplyPacket) packet);
                 }
             }
         }

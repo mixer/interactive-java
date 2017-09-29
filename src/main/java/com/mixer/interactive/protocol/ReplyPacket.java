@@ -1,6 +1,5 @@
 package com.mixer.interactive.protocol;
 
-import com.google.common.base.Objects;
 import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
 

@@ -19,7 +19,7 @@ import java.util.Collection;
  *
  * @since       1.0.0
  */
-public abstract class InteractiveResource <T extends InteractiveResource<T>> implements IInteractiveUpdatable<T> {
+public abstract class InteractiveResource<T extends InteractiveResource<T>> implements IInteractiveUpdatable {
 
     /**
      * Json object holding the map of meta properties
@@ -38,17 +38,18 @@ public abstract class InteractiveResource <T extends InteractiveResource<T>> imp
     protected abstract T getThis();
 
     /**
-     * Iterates through a <code>Collection</code> of <code>T</code> objects. If <code>this</code> is found to be
-     * in the <code>Collection</code> then <code>this</code> has it's values updated.
+     * Iterates through a <code>Collection</code> of Objects. If <code>this</code> is found to be in the
+     * <code>Collection</code> then <code>this</code> has it's values updated.
      *
      * @param   objects
-     *          A <code>Collection</code> of <code>T</code> objects
+     *          A <code>Collection</code> of Objects
      *
-     * @return  <code>this</code> for method chaining
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          provided <code>Collection</code> contains <code>this</code>
      *
      * @since   1.0.0
      */
-    public abstract T syncIfEqual(Collection<? extends T> objects);
+    public abstract boolean syncIfEqual(Collection<?> objects);
 
     /**
      * Returns the Json object holding the map of meta properties.

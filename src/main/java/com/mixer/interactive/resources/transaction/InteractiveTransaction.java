@@ -1,10 +1,8 @@
 package com.mixer.interactive.resources.transaction;
 
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mixer.interactive.GameClient;
-import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
-import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
+
+import java.util.concurrent.CompletableFuture;
 
 import static com.mixer.interactive.GameClient.TRANSACTION_SERVICE_PROVIDER;
 
@@ -46,27 +44,6 @@ public class InteractiveTransaction {
     }
 
     /**
-     * Attempts to complete the Spark transaction on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the capture operation
-     *
-     * @return  <code>true</code> if the transaction completed successfully, <code>false</code> otherwise
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public boolean capture(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        return gameClient != null
-                ? gameClient.using(TRANSACTION_SERVICE_PROVIDER).capture(transactionID)
-                : false;
-    }
-
-    /**
      * Asynchronously attempts to complete the Spark transaction on the Interactive service.
      *
      * @param   gameClient
@@ -77,9 +54,9 @@ public class InteractiveTransaction {
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Boolean> captureAsync(GameClient gameClient) {
+    public CompletableFuture<Boolean> capture(GameClient gameClient) {
         return gameClient != null
-                ? gameClient.using(TRANSACTION_SERVICE_PROVIDER).captureAsync(transactionID)
-                : Futures.immediateFuture(false);
+                ? gameClient.using(TRANSACTION_SERVICE_PROVIDER).capture(transactionID)
+                : CompletableFuture.completedFuture(false);
     }
 }

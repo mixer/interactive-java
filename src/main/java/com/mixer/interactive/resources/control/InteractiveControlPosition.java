@@ -1,6 +1,5 @@
 package com.mixer.interactive.resources.control;
 
-import com.google.common.base.Objects;
 import com.google.common.hash.Hashing;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,22 +54,22 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
     /**
      * Width of the <code>InteractiveControl</code>
      */
-    private Number width;
+    private int width;
 
     /**
      * Height of the <code>InteractiveControl</code>
      */
-    private Number height;
+    private int height;
 
     /**
      * X position on the Interactive control canvas
      */
-    private Number x;
+    private int x;
 
     /**
      * Y position on the Interactive control canvas
      */
-    private Number y;
+    private int y;
 
     /**
      * Initializes a new <code>InteractiveControlPosition</code> with default values.
@@ -100,7 +99,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public InteractiveControlPosition(String size, Number width, Number height, Number x, Number y) {
+    public InteractiveControlPosition(String size, int width, int height, int x, int y) {
         this(InteractiveCanvasSize.from(size), width, height, x, y);
     }
 
@@ -120,7 +119,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public InteractiveControlPosition(InteractiveCanvasSize size, Number width, Number height, Number x, Number y) {
+    public InteractiveControlPosition(InteractiveCanvasSize size, int width, int height, int x, int y) {
         if (size != null) {
             this.size = size;
         }
@@ -153,7 +152,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public Number getWidth() {
+    public int getWidth() {
         return width;
     }
 
@@ -167,7 +166,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public InteractiveControlPosition setWidth(Number width) {
+    public InteractiveControlPosition setWidth(int width) {
         this.width = width;
         return this;
     }
@@ -179,7 +178,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public Number getHeight() {
+    public int getHeight() {
         return height;
     }
 
@@ -193,7 +192,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public InteractiveControlPosition setHeight(Number height) {
+    public InteractiveControlPosition setHeight(int height) {
         this.height = height;
         return this;
     }
@@ -210,7 +209,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public InteractiveControlPosition resize(Number width, Number height) {
+    public InteractiveControlPosition resize(int width, int height) {
         this.width = width;
         this.height = height;
         return this;
@@ -223,7 +222,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public Number getX() {
+    public int getX() {
         return x;
     }
 
@@ -237,7 +236,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public InteractiveControlPosition setX(Number x) {
+    public InteractiveControlPosition setX(int x) {
         this.x = x;
         return this;
     }
@@ -249,7 +248,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public Number getY() {
+    public int getY() {
         return y;
     }
 
@@ -263,7 +262,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public InteractiveControlPosition setY(Number y) {
+    public InteractiveControlPosition setY(int y) {
         this.y = y;
         return this;
     }
@@ -280,7 +279,7 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
      *
      * @since   1.0.0
      */
-    public InteractiveControlPosition moveTo(Number x, Number y) {
+    public InteractiveControlPosition moveTo(int x, int y) {
         this.x = x;
         this.y = y;
         return this;
@@ -295,10 +294,10 @@ public class InteractiveControlPosition implements Comparable<InteractiveControl
     public int hashCode() {
         return Hashing.md5().newHasher()
                 .putString(size.toString(), StandardCharsets.UTF_8)
-                .putInt(width.intValue())
-                .putInt(height.intValue())
-                .putInt(x.intValue())
-                .putInt(y.intValue())
+                .putInt(width)
+                .putInt(height)
+                .putInt(x)
+                .putInt(y)
                 .hash()
                 .asInt();
     }

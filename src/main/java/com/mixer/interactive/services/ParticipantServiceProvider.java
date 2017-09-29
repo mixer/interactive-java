@@ -1,10 +1,9 @@
 package com.mixer.interactive.services;
 
 import com.google.common.reflect.TypeToken;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
+import com.mixer.interactive.exception.InteractiveException;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
 import com.mixer.interactive.protocol.InteractiveMethod;
@@ -16,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Provides all functionality relating to making requests and interpreting replies from the Interactive service
@@ -61,30 +61,10 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * Retrieves all of the participants that are currently connected to the Interactive integration that this client is
-     * connected to, in ascending order by the time they connected.
-     *
-     * @return  A <code>Set</code> of all <code>InteractiveParticipants</code> connected to the
-     *          Interactive integration
-     *
-     * @throws InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveParticipant
-     *
-     * @since   1.0.0
-     */
-    public Set<InteractiveParticipant> getAllParticipants() throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return getParticipants(InteractiveMethod.GET_ALL_PARTICIPANTS, 0, Comparator.comparingLong(InteractiveParticipant::getConnectedAt));
-    }
-
-    /**
      * <p>Retrieves all of the participants that are currently connected to the Interactive integration that this client
      * is connected to, in ascending order by the time they connected.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -96,42 +76,24 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of all
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Set</code> of all
      *          <code>InteractiveParticipants</code> connected to the Interactive integration
      *
      * @see     InteractiveParticipant
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Set<InteractiveParticipant>> getAllParticipantsAsync() {
-        return gameClient.getExecutorService().submit(this::getAllParticipants);
-    }
-
-    /**
-     * Retrieves all of the currently connected participants who have given input after the specified threshold time,
-     * where the threshold is given as a UTC unix timestamp (in milliseconds), in ascending order by the time they last
-     * gave input.
-     *
-     * @param   thresholdTimestamp
-     *          A UTC unix timestamp (in milliseconds)
-     *
-     * @return  A <code>Set</code> of <code>InteractiveParticipants</code> connected to the
-     *          Interactive integration that have given input since the provided threshold, in ascending order by
-     *          the time they last gave input
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveParticipant
-     *
-     * @since   1.0.0
-     */
-    public Set<InteractiveParticipant> getActiveParticipants(long thresholdTimestamp) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return getParticipants(InteractiveMethod.GET_ACTIVE_PARTICIPANTS, thresholdTimestamp, Comparator.comparingLong(InteractiveParticipant::getLastInputAt));
+    public CompletableFuture<Set<InteractiveParticipant>> getAllParticipants() {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return getParticipants(InteractiveMethod.GET_ALL_PARTICIPANTS, 0, Comparator.comparingLong(InteractiveParticipant::getConnectedAt));
+            }
+            catch (InteractiveException ex) {
+                return Collections.emptySet();
+            }
+        });
     }
 
     /**
@@ -139,7 +101,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * where the threshold is given as a UTC unix timestamp (in milliseconds), in ascending order by the time they last
      * gave input.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -151,12 +113,12 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   thresholdTimestamp
      *          A UTC unix timestamp (in milliseconds)
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Set</code> of
      *          <code>InteractiveParticipants</code> connected to the Interactive integration
      *          that have given input since the provided threshold
      *
@@ -164,8 +126,15 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Set<InteractiveParticipant>> getActiveParticipantsAsync(long thresholdTimestamp) {
-        return gameClient.getExecutorService().submit(() -> getActiveParticipants(thresholdTimestamp));
+    public CompletableFuture<Set<InteractiveParticipant>> getActiveParticipants(long thresholdTimestamp) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return getParticipants(InteractiveMethod.GET_ACTIVE_PARTICIPANTS, thresholdTimestamp, Comparator.comparingLong(InteractiveParticipant::getLastInputAt));
+            }
+            catch (InteractiveException ex) {
+                return Collections.emptySet();
+            }
+        });
     }
 
     /**
@@ -177,22 +146,32 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * participants. If a provided participant is not connected to the integration, the update to that participant will
      * be ignored.</p>
      *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
+     *
      * @param   participants
      *          An array of <code>InteractiveParticipants</code> to be updated
      *
-     * @return  A <code>Set</code> of updated <code>InteractiveParticipants</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveParticipants</code>
      *
      * @see     InteractiveParticipant
      *
      * @since   1.0.0
      */
-    public Set<InteractiveParticipant> updateParticipants(InteractiveParticipant ... participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return updateParticipants(0, participants);
+    public CompletableFuture<Set<InteractiveParticipant>> update(InteractiveParticipant ... participants) {
+        return update(0, participants);
     }
 
     /**
@@ -203,25 +182,37 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
      * participants. If a provided participant is not connected to the integration, the update to that participant will
      * be ignored.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   priority
      *          The priority value for the update
      * @param   participants
      *          An array of <code>InteractiveParticipants</code> to be updated
      *
-     * @return  A <code>Set</code> of updated <code>InteractiveParticipants</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveParticipants</code>
      *
      * @see     InteractiveParticipant
      *
      * @since   1.0.0
      */
-    public Set<InteractiveParticipant> updateParticipants(int priority, InteractiveParticipant ... participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return participants != null ? updateParticipants(priority, Arrays.asList(participants)) : Collections.emptySet();
+    public CompletableFuture<Set<InteractiveParticipant>> update(int priority, InteractiveParticipant ... participants) {
+        return participants != null
+                ? update(priority, Arrays.asList(participants))
+                : CompletableFuture.completedFuture(Collections.emptySet());
     }
 
     /**
@@ -232,23 +223,33 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
      * participants. If a provided participant is not connected to the integration, the update to that participant will
      * be ignored.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   participants
      *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
      *
-     * @return  A <code>Set</code> of updated <code>InteractiveParticipants</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveParticipants</code>
      *
      * @see     InteractiveParticipant
      *
      * @since   1.0.0
      */
-    public Set<InteractiveParticipant> updateParticipants(Collection<InteractiveParticipant> participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return updateParticipants(0, participants);
+    public CompletableFuture<Set<InteractiveParticipant>> update(Collection<InteractiveParticipant> participants) {
+        return update(0, participants);
     }
 
     /**
@@ -259,191 +260,42 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
      * participants. If a provided participant is not connected to the integration, the update to that participant will
      * be ignored.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   priority
      *          The priority value for the update
      * @param   participants
      *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
      *
-     * @return  A <code>Set</code> of updated <code>InteractiveParticipants</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveParticipants</code>
      *
      * @see     InteractiveParticipant
      *
      * @since   1.0.0
      */
-    public Set<InteractiveParticipant> updateParticipants(int priority, Collection<InteractiveParticipant> participants) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+    public CompletableFuture<Set<InteractiveParticipant>> update(int priority, Collection<InteractiveParticipant> participants) {
         if (participants == null) {
-            return Collections.emptySet();
+            return CompletableFuture.completedFuture(Collections.emptySet());
         }
 
         JsonObject jsonParams = new JsonObject();
         jsonParams.add(PARAM_KEY_PARTICIPANTS, GameClient.GSON.toJsonTree(participants));
         jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
         return gameClient.using(GameClient.RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.UPDATE_PARTICIPANTS, jsonParams, PARAM_KEY_PARTICIPANTS, PARTICIPANT_SET_TYPE);
-    }
-
-    /**
-     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
-     * participants.</p>
-     *
-     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
-     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * participants. If a provided participant is not connected to the integration, the update to that participant will
-     * be ignored.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   participants
-     *          An array of <code>InteractiveParticipants</code> to be updated
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveParticipants</code>
-     *
-     * @see     InteractiveParticipant
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(InteractiveParticipant ... participants) {
-        return updateParticipantsAsync(0, participants);
-    }
-
-    /**
-     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
-     * participants.</p>
-     *
-     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
-     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * participants. If a provided participant is not connected to the integration, the update to that participant will
-     * be ignored.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   priority
-     *          The priority value for the update
-     * @param   participants
-     *          An array of <code>InteractiveParticipants</code> to be updated
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveParticipants</code>
-     *
-     * @see     InteractiveParticipant
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(int priority, InteractiveParticipant ... participants) {
-        return participants != null ? updateParticipantsAsync(priority, Arrays.asList(participants)) : Futures.immediateFuture(Collections.emptySet());
-    }
-
-    /**
-     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
-     * participants.</p>
-     *
-     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
-     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * participants. If a provided participant is not connected to the integration, the update to that participant will
-     * be ignored.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   participants
-     *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveParticipants</code>
-     *
-     * @see     InteractiveParticipant
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(Collection<InteractiveParticipant> participants) {
-        return updateParticipantsAsync(0, participants);
-    }
-
-    /**
-     * <p>Bulk-updates a collection of participants. The Interactive service will reply with a set of updated
-     * participants.</p>
-     *
-     * <p>The Interactive service will either update all the participants provided, or fail in which case NONE of the
-     * participants provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * participants. If a provided participant is not connected to the integration, the update to that participant will
-     * be ignored.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   priority
-     *          The priority value for the update
-     * @param   participants
-     *          A <code>Collection</code> of <code>InteractiveParticipants</code> to be updated
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveParticipants</code>
-     *
-     * @see     InteractiveParticipant
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Set<InteractiveParticipant>> updateParticipantsAsync(int priority, Collection<InteractiveParticipant> participants) {
-        if (participants == null) {
-            return Futures.immediateFuture(Collections.emptySet());
-        }
-
-        JsonObject jsonParams = new JsonObject();
-        jsonParams.add(PARAM_KEY_PARTICIPANTS, GameClient.GSON.toJsonTree(participants));
-        jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
-        return gameClient.using(GameClient.RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.UPDATE_PARTICIPANTS, jsonParams, PARAM_KEY_PARTICIPANTS, PARTICIPANT_SET_TYPE);
     }
 
     /**
@@ -463,9 +315,9 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *          meet the conditions of the specified method call and the initial marker, sorted in the specified
      *          ordering
      *
-     * @throws  InteractiveReplyWithErrorException
+     * @throws InteractiveReplyWithErrorException
      *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
+     * @throws InteractiveRequestNoReplyException
      *          If no reply is received from the Interactive service
      *
      * @see     InteractiveParticipant
@@ -489,7 +341,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
             jsonObject.addProperty(property, marker);
             int nextPacketId = gameClient.using(GameClient.RPC_SERVICE_PROVIDER).claimNextPacketId();
             MethodPacket requestPacket = new MethodPacket(nextPacketId, method, jsonObject);
-            ReplyPacket replyPacket = gameClient.using(GameClient.RPC_SERVICE_PROVIDER).send(requestPacket);
+            ReplyPacket replyPacket = gameClient.using(GameClient.RPC_SERVICE_PROVIDER).send(requestPacket).join();
             if (replyPacket.hasError()) {
                 throw new InteractiveReplyWithErrorException(requestPacket, replyPacket.getError());
             }

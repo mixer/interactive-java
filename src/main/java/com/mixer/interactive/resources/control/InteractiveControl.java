@@ -1,20 +1,14 @@
 package com.mixer.interactive.resources.control;
 
-import com.google.common.base.Objects;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hashing;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
+import com.google.gson.annotations.SerializedName;
 import com.mixer.interactive.GameClient;
-import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
-import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
 import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.resources.IInteractiveCreatable;
 import com.mixer.interactive.resources.IInteractiveDeletable;
 import com.mixer.interactive.resources.InteractiveResource;
-import com.mixer.interactive.resources.scene.InteractiveScene;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static com.mixer.interactive.GameClient.CONTROL_SERVICE_PROVIDER;
 
@@ -36,19 +31,14 @@ import static com.mixer.interactive.GameClient.CONTROL_SERVICE_PROVIDER;
  *
  * @since       1.0.0
  */
-public abstract class InteractiveControl <T extends InteractiveResource<T>>
+public abstract class InteractiveControl<T extends InteractiveResource<T>>
         extends InteractiveResource<T>
-        implements IInteractiveCreatable<T>, IInteractiveDeletable, Comparable<InteractiveControl> {
+        implements IInteractiveCreatable, IInteractiveDeletable, Comparable<InteractiveControl> {
 
     /**
      * Logger.
      */
     private static final Logger LOG = LogManager.getLogger();
-
-    /**
-     * Constant representing the default scene
-     */
-    private static final String DEFAULT_SCENE = "default";
 
     /**
      * Unique identifier for this control
@@ -73,7 +63,8 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
     /**
      * <code>Set</code> of <code>InteractiveControlPositions</code> for this control
      */
-    private final Set<InteractiveControlPosition> position = new HashSet<>();
+    @SerializedName("position")
+    private final Set<InteractiveControlPosition> controlPositions = new HashSet<>();
 
     /**
      * Initializes a new <code>InteractiveControl</code>.
@@ -96,13 +87,13 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      *          Unique identifier for the <code>InteractiveControl</code>
      * @param   kind
      *          The <code>InteractiveControlType</code> of this control
-     * @param   position
+     * @param   controlPositions
      *          An array of initial <code>InteractiveControlPosition</code> for this control
      *
      * @since   1.0.0
      */
-    InteractiveControl(String controlID, InteractiveControlType kind, InteractiveControlPosition ... position) {
-        this(controlID, null, kind, position);
+    InteractiveControl(String controlID, InteractiveControlType kind, InteractiveControlPosition ... controlPositions) {
+        this(controlID, null, kind, controlPositions);
     }
 
     /**
@@ -126,13 +117,13 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      *          Unique identifier for the <code>InteractiveControl</code>
      * @param   kind
      *          The kind of control this <code>InteractiveControl</code> is
-     * @param   position
+     * @param   controlPositions
      *          An array of initial <code>InteractiveControlPosition</code> for this control
      *
      * @since   1.0.0
      */
-    InteractiveControl(String controlID, String kind, InteractiveControlPosition ... position) {
-        this(controlID, InteractiveControlType.from(kind), position);
+    InteractiveControl(String controlID, String kind, InteractiveControlPosition ... controlPositions) {
+        this(controlID, InteractiveControlType.from(kind), controlPositions);
     }
 
     /**
@@ -144,12 +135,12 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      *          Unique identifier for the <code>InteractiveScene</code> that contains this control
      * @param   kind
      *          The <code>InteractiveControlType</code> of this control
-     * @param   position
+     * @param   controlPositions
      *          An array of initial <code>InteractiveControlPosition</code> for this control
      *
      * @since   1.0.0
      */
-    InteractiveControl(String controlID, String sceneID, InteractiveControlType kind, InteractiveControlPosition ... position) {
+    InteractiveControl(String controlID, String sceneID, InteractiveControlType kind, InteractiveControlPosition ... controlPositions) {
 
         if (controlID != null && !controlID.isEmpty()) {
             this.controlID = controlID;
@@ -174,8 +165,8 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
             throw new IllegalArgumentException("Invalid control type");
         }
 
-        if (position != null) {
-            Collections.addAll(this.position, position);
+        if (controlPositions != null) {
+            Collections.addAll(this.controlPositions, controlPositions);
         }
     }
 
@@ -245,13 +236,13 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
     }
 
     /**
-     * Returns <code>true</code> if this <code>InteractiveControl</code> has a position for the provided canvas size,
+     * Returns <code>true</code> if this <code>InteractiveControl</code> has a controlPositions for the provided canvas size,
      * <code>false</code> otherwise.
      *
      * @param   canvasSize
-     *          The canvas size that is being checked for a position setting for this control
+     *          The canvas size that is being checked for a controlPositions setting for this control
      *
-     * @return  <code>true</code> if this <code>InteractiveControl</code> has a position for the provided
+     * @return  <code>true</code> if this <code>InteractiveControl</code> has a controlPositions for the provided
      *          canvas size, <code>false</code> otherwise
      *
      * @since   1.0.0
@@ -261,13 +252,13 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
     }
 
     /**
-     * Returns <code>true</code> if this <code>InteractiveControl</code> has a position for the provided
+     * Returns <code>true</code> if this <code>InteractiveControl</code> has a controlPositions for the provided
      * <code>InteractiveCanvasSize</code>, <code>false</code> otherwise.
      *
      * @param   canvasSize
-     *          The <code>InteractiveCanvasSize</code> that is being checked for a position setting for this control
+     *          The <code>InteractiveCanvasSize</code> that is being checked for a controlPositions setting for this control
      *
-     * @return  <code>true</code> if this <code>InteractiveControl</code> has a position for the provided
+     * @return  <code>true</code> if this <code>InteractiveControl</code> has a controlPositions for the provided
      *          <code>InteractiveCanvasSize</code>, <code>false</code> otherwise
      *
      * @since   1.0.0
@@ -305,7 +296,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      * @since   1.0.0
      */
     public InteractiveControlPosition getPositionFor(InteractiveCanvasSize canvasSize) {
-        for (InteractiveControlPosition controlPosition : position) {
+        for (InteractiveControlPosition controlPosition : controlPositions) {
             if (controlPosition.getCanvasSize().equals(canvasSize)) {
                 return controlPosition;
             }
@@ -323,7 +314,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      * @since   1.0.0
      */
     public Set<InteractiveControlPosition> getPositions() {
-        return position;
+        return controlPositions;
     }
 
     /**
@@ -341,7 +332,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
     public T addPosition(InteractiveControlPosition ... controlPositions) {
         for (InteractiveControlPosition controlPosition : controlPositions) {
             if (controlPosition != null) {
-                position.add(controlPosition);
+                this.controlPositions.add(controlPosition);
             }
         }
         return getThis();
@@ -379,8 +370,8 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      */
     public T setPositions(InteractiveControlPosition ...  controlPositions) {
         if (controlPositions != null) {
-            position.clear();
-            Collections.addAll(position, controlPositions);
+            this.controlPositions.clear();
+            Collections.addAll(this.controlPositions, controlPositions);
         }
         return getThis();
     }
@@ -398,10 +389,14 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      * @since   1.0.0
      */
     public T removePosition(InteractiveCanvasSize canvasSize) {
-        for (InteractiveControlPosition controlPosition : position) {
+        InteractiveControlPosition candidatePosition = null;
+        for (InteractiveControlPosition controlPosition : controlPositions) {
             if (controlPosition.getCanvasSize().equals(canvasSize)) {
-                position.remove(controlPosition);
+                candidatePosition = controlPosition;
             }
+        }
+        if (candidatePosition != null) {
+            controlPositions.remove(candidatePosition);
         }
         return getThis();
     }
@@ -429,7 +424,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      * @since   1.0.0
      */
     public T removeAllPositions() {
-        position.clear();
+        controlPositions.clear();
         return getThis();
     }
 
@@ -439,146 +434,28 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      * @param   gameClient
      *          The <code>GameClient</code> to use for the create operation
      *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#CREATE_CONTROLS create} method call completes with no errors
      *
      * @see     IInteractiveCreatable#create(GameClient)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public T create(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        return create(gameClient, DEFAULT_SCENE);
-    }
-
-    /**
-     * Creates <code>this</code> in the specified scene on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the create operation
-     * @param   sceneID
-     *          The identifier for the <code>InteractiveScene</code> that this <code>InteractiveControl</code> will
-     *          be created in
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public T create(GameClient gameClient, String sceneID) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null && sceneID != null && !sceneID.isEmpty() && !position.isEmpty()) {
-            gameClient.using(CONTROL_SERVICE_PROVIDER).createControls(sceneID, this);
+    public CompletableFuture<Boolean> create(GameClient gameClient) {
+        if (gameClient == null || controlPositions.isEmpty()) {
+            return CompletableFuture.completedFuture(false);
         }
-        return getThis();
-    }
 
-    /**
-     * Creates <code>this</code> in the specified scene on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the create operation
-     * @param   scene
-     *          The <code>InteractiveScene</code> that this <code>InteractiveControl</code> will be created in
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public T create(GameClient gameClient, InteractiveScene scene) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        return create(gameClient, scene != null ? scene.getSceneID() : null);
-    }
-
-    /**
-     * Asynchronously creates <code>this</code> in the default scene on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the create operation
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
-     *
-     * @see     IInteractiveCreatable#createAsync(GameClient)
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public ListenableFuture<T> createAsync(GameClient gameClient) {
-        return createAsync(gameClient, DEFAULT_SCENE);
-    }
-
-    /**
-     * Asynchronously creates <code>this</code> in the specified scene on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the create operation
-     * @param   sceneID
-     *          The identifier for the <code>InteractiveScene</code> that this <code>InteractiveControl</code> will
-     *          be created in
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<T> createAsync(GameClient gameClient, String sceneID) {
-        if (gameClient != null && sceneID != null && !sceneID.isEmpty() && !position.isEmpty()) {
-            gameClient.using(CONTROL_SERVICE_PROVIDER).createControlsAsync(sceneID, this);
-        }
-        return Futures.immediateFuture(getThis());
-    }
-
-    /**
-     * Asynchronously creates <code>this</code> in the specified scene on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the create operation
-     * @param   scene
-     *          The <code>InteractiveScene</code> that this <code>InteractiveControl</code> will be created in
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<T> createAsync(GameClient gameClient, InteractiveScene scene) {
-        return createAsync(gameClient, scene != null ? scene.getSceneID() : null);
-    }
-
-    /**
-     * Updates <code>this</code> in the specified scene on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the update operation
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public T update(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null && !position.isEmpty()) {
-            Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).updateControls(this.sceneID, this);
-            for (InteractiveControl updatedControl : updatedControls) {
-                if (this.controlID.equals(updatedControl.controlID)) {
-                    return getThis();
-                }
-            }
-        }
-        return getThis();
+        return gameClient.using(CONTROL_SERVICE_PROVIDER).create(this)
+                .thenCompose(promiseMap -> {
+                    for (InteractiveControl control : promiseMap.keySet()) {
+                        if (getControlID().equals(control.getControlID())) {
+                            return promiseMap.get(control);
+                        }
+                    }
+                    return CompletableFuture.completedFuture(false);
+                });
     }
 
     /**
@@ -587,41 +464,26 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      * @param   gameClient
      *          The <code>GameClient</code> to use for the update operation
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#UPDATE_CONTROLS update} method call completes with no errors
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
-    public ListenableFuture<T> updateAsync(GameClient gameClient) {
-        if (gameClient != null && !position.isEmpty()) {
-            return Futures.transform(gameClient.using(CONTROL_SERVICE_PROVIDER).updateControlsAsync(this.sceneID, this), (AsyncFunction<Set<InteractiveControl>, T>) updatedControls -> {
-                for (InteractiveControl updatedControl : updatedControls) {
-                    if (InteractiveControl.this.controlID.equals(updatedControl.controlID)) {
-                        return Futures.immediateFuture(getThis());
-                    }
-                }
-                return Futures.immediateFuture(getThis());
-            });
+    public CompletableFuture<Boolean> update(GameClient gameClient) {
+        if (gameClient == null || controlPositions.isEmpty()) {
+            return CompletableFuture.completedFuture(false);
         }
-        return Futures.immediateFuture(getThis());
-    }
 
-    /**
-     * Deletes <code>this</code> from the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public void delete(GameClient gameClient) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        if (gameClient != null) {
-            gameClient.using(CONTROL_SERVICE_PROVIDER).deleteControls(this.sceneID, this);
-        }
+        return gameClient.using(CONTROL_SERVICE_PROVIDER).update(Collections.singletonList(this))
+                .thenCompose(updatePromises -> {
+                    for (InteractiveControl control : updatePromises.keySet()) {
+                        if (getControlID().equals(control.getControlID())) {
+                            return updatePromises.get(control);
+                        }
+                    }
+                    return CompletableFuture.supplyAsync(Collections::emptySet);
+                })
+                .thenCompose(updatedControls -> CompletableFuture.supplyAsync(() -> syncIfEqual(updatedControls)));
     }
 
     /**
@@ -630,15 +492,25 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
      * @param   gameClient
      *          The <code>GameClient</code> to use for the delete operation
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_CONTROLS deleteControls} method call completes with no errors
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#DELETE_CONTROLS delete} method call completes with no errors
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
-    public ListenableFuture<Boolean> deleteAsync(GameClient gameClient) {
-        return gameClient != null
-                ? gameClient.using(CONTROL_SERVICE_PROVIDER).deleteControlsAsync(this.sceneID, this)
-                : Futures.immediateFuture(false);
+    public CompletableFuture<Boolean> delete(GameClient gameClient) {
+        if (gameClient == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        return gameClient.using(CONTROL_SERVICE_PROVIDER).delete(this)
+                .thenCompose(promiseMap -> {
+                    for (InteractiveControl control : promiseMap.keySet()) {
+                        if (getControlID().equals(control.getControlID())) {
+                            return promiseMap.get(control);
+                        }
+                    }
+                    return CompletableFuture.completedFuture(false);
+                });
     }
 
     /**
@@ -662,7 +534,7 @@ public abstract class InteractiveControl <T extends InteractiveResource<T>>
                 .putString(controlID, StandardCharsets.UTF_8)
                 .putString(kind.toString(), StandardCharsets.UTF_8)
                 .putBoolean(disabled)
-                .putObject(position, (Funnel<Set<InteractiveControlPosition>>) (controlPositions, into) ->
+                .putObject(controlPositions, (Funnel<Set<InteractiveControlPosition>>) (controlPositions, into) ->
                         controlPositions.forEach(controlPosition -> into.putInt(controlPosition.hashCode())))
                 .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
                     if (from != null && !from.isJsonNull()) {

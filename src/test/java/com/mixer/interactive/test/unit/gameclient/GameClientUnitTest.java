@@ -1,4 +1,4 @@
-package com.mixer.interactive.test.unit;
+package com.mixer.interactive.test.unit.gameclient;
 
 import com.mixer.interactive.GameClient;
 import org.junit.Assert;
@@ -11,7 +11,7 @@ import org.junit.Test;
  *
  * @since       1.0.0
  */
-public class GameClientTest {
+public class GameClientUnitTest {
 
     /**
      * The project version ID for the Interactive integration that this test will use

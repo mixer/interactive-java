@@ -1,7 +1,5 @@
 package com.mixer.interactive.protocol;
 
-import com.google.common.base.Objects;
-
 /**
  * A <code>InteractiveError</code> represents the error object that could be returned as part of a
  * <code>ReplyPacket</code>. In the event an error is returned, a <code>InteractiveReplyWithErrorException</code> is

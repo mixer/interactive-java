@@ -1,6 +1,5 @@
 package com.mixer.interactive.resources.core;
 
-import com.google.common.base.Objects;
 import com.mixer.interactive.protocol.InteractiveMethod;
 
 /**

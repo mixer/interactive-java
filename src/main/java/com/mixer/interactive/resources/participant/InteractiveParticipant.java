@@ -1,22 +1,17 @@
 package com.mixer.interactive.resources.participant;
 
-import com.google.common.base.Objects;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hashing;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
-import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
-import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
+import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.resources.IInteractiveUpdatable;
 import com.mixer.interactive.resources.InteractiveResource;
 import com.mixer.interactive.resources.group.InteractiveGroup;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A <code>InteractiveParticipant</code> represents a participant using the Interactive service.
@@ -89,7 +84,7 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
      *
      * @since   1.0.0
      */
-    private InteractiveParticipant(String sessionID, Integer userID, String username, Integer level, Long lastInputAt, Long connectedAt, Boolean disabled, String groupID) {
+    public InteractiveParticipant(String sessionID, Integer userID, String username, Integer level, Long lastInputAt, Long connectedAt, Boolean disabled, String groupID) {
         this.sessionID = sessionID;
         this.userID = userID;
         this.username = username;
@@ -194,7 +189,7 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
         else {
             this.disabled = false;
         }
-        return getThis();
+        return this;
     }
 
     /**
@@ -225,7 +220,7 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
         else {
             this.groupID = "default";
         }
-        return getThis();
+        return this;
     }
 
     /**
@@ -266,34 +261,37 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
     }
 
     /**
-     * Iterates through a <code>Collection</code> of <code>InteractiveParticipants</code>. If <code>this</code> is found to be
-     * in the <code>Collection</code> then <code>this</code> has it's values updated.
+     * Iterates through a <code>Collection</code> of Objects. If <code>this</code> is found to be in the
+     * <code>Collection</code> then <code>this</code> has it's values updated.
      *
      * @param   objects
-     *          A <code>Collection</code> of <code>InteractiveParticipants</code>
+     *          A <code>Collection</code> of Objects
      *
-     * @return  <code>this</code> for method chaining
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          provided <code>Collection</code> contains <code>this</code>
      *
      * @see     InteractiveResource#syncIfEqual(Collection)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public InteractiveParticipant syncIfEqual(Collection<? extends InteractiveParticipant> objects) {
+    public boolean syncIfEqual(Collection<?> objects) {
         if (objects != null) {
-            for (InteractiveParticipant object : objects) {
-                if (this.equals(object)) {
-                    this.meta = object.meta;
-                    this.username = object.username;
-                    this.level = object.level;
-                    this.lastInputAt = object.lastInputAt;
-                    this.connectedAt = object.connectedAt;
-                    this.disabled = object.disabled;
-                    this.groupID = object.groupID;
+            for (Object o : objects) {
+                if (this.equals(o)) {
+                    this.meta = ((InteractiveParticipant) o).meta;
+                    this.username = ((InteractiveParticipant) o).username;
+                    this.level = ((InteractiveParticipant) o).level;
+                    this.lastInputAt = ((InteractiveParticipant) o).lastInputAt;
+                    this.connectedAt = ((InteractiveParticipant) o).connectedAt;
+                    this.disabled = ((InteractiveParticipant) o).disabled;
+                    this.groupID = ((InteractiveParticipant) o).groupID;
+                    return true;
                 }
             }
         }
-        return getThis();
+
+        return false;
     }
 
     /**
@@ -302,45 +300,21 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
      * @param   gameClient
      *          The <code>GameClient</code> to use for the update operation
      *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#UPDATE_PARTICIPANTS update} method call completes with no errors
      *
      * @see     IInteractiveUpdatable#update(GameClient)
      *
      * @since   1.0.0
      */
     @Override
-    public InteractiveParticipant update(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null) {
-            syncIfEqual(gameClient.using(GameClient.PARTICIPANT_SERVICE_PROVIDER).updateParticipants(this));
-        }
-        return getThis();
-    }
-
-    /**
-     * Asynchronously updates <code>this</code> on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the update operation
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
-     *
-     * @see     IInteractiveUpdatable#updateAsync(GameClient)
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public ListenableFuture<InteractiveParticipant> updateAsync(GameClient gameClient) {
+    public CompletableFuture<Boolean> update(GameClient gameClient) {
         if (gameClient == null) {
-            Futures.immediateFuture(getThis());
+            return CompletableFuture.completedFuture(false);
         }
-        return Futures.transform(gameClient.using(GameClient.PARTICIPANT_SERVICE_PROVIDER).updateParticipantsAsync(this),
-                (AsyncFunction<Set<InteractiveParticipant>, InteractiveParticipant>) updatedParticipants ->
-                        Futures.immediateFuture(syncIfEqual(updatedParticipants)));
+
+        return gameClient.using(GameClient.PARTICIPANT_SERVICE_PROVIDER).update(this)
+                .thenCompose(participants -> CompletableFuture.supplyAsync(() -> syncIfEqual(participants)));
     }
 
     /**

@@ -2,9 +2,10 @@ package com.mixer.interactive;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.reflect.TypeToken;
-import com.google.common.util.concurrent.*;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.*;
 import com.mixer.interactive.event.UndefinedInteractiveEvent;
+import com.mixer.interactive.event.control.ControlDeleteEvent;
 import com.mixer.interactive.event.control.input.ControlInputEvent;
 import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
@@ -22,7 +23,6 @@ import com.mixer.interactive.resources.core.InteractiveMemoryStatistic;
 import com.mixer.interactive.resources.core.ThrottleState;
 import com.mixer.interactive.resources.scene.InteractiveScene;
 import com.mixer.interactive.services.*;
-import com.mixer.interactive.services.ServiceManager;
 import com.mixer.interactive.util.EndpointUtil;
 import com.mixer.interactive.ws.InteractiveWebSocketClient;
 import org.apache.logging.log4j.LogManager;
@@ -35,7 +35,10 @@ import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 /**
@@ -63,6 +66,7 @@ public class GameClient {
             .registerTypeAdapter(InteractiveControlInput.class, new InteractiveControlInputAdapter())
             .registerTypeAdapter(UndefinedInteractiveEvent.class, new UndefinedInteractiveEventAdapter())
             .registerTypeAdapter(ControlInputEvent.class, new ControlInputEventAdapter())
+            .registerTypeAdapter(ControlDeleteEvent.class, new ControlDeleteEventAdapter())
             .serializeNulls()
             .create();
 
@@ -156,9 +160,9 @@ public class GameClient {
     private final EventBus eventBus;
 
     /**
-     * Thread executor service for creating <code>ListenableFutures</code>
+     * Thread executor service for creating <code>CompletableFutures</code>
      */
-    private final ListeningScheduledExecutorService executor;
+    private final ScheduledExecutorService executor;
 
     /**
      * WebSocket client that this game client uses to communicate with the Interactive service
@@ -180,13 +184,10 @@ public class GameClient {
         registerServiceProviders();
 
         eventBus = new EventBus(projectVersionId.toString());
-        executor = MoreExecutors.listeningDecorator(
-                Executors.newScheduledThreadPool(THREAD_POOL_SIZE, new ThreadFactoryBuilder()
-                        .setNameFormat("interactive-project-" + this.projectVersionId + "-thread-%d")
-                        .setDaemon(true)
-                        .build()
-                )
-        );
+        executor = Executors.newScheduledThreadPool(THREAD_POOL_SIZE, new ThreadFactoryBuilder()
+                .setNameFormat("interactive-project-" + this.projectVersionId + "-thread-%d")
+                .setDaemon(true)
+                .build());
     }
 
     /**
@@ -234,13 +235,13 @@ public class GameClient {
     }
 
     /**
-     * Returns the thread executor service used for creating <code>ListenableFutures</code>.
+     * Returns the thread executor service used for creating <code>CompletableFutures</code>.
      *
-     * @return  The thread executor service used for creating <code>ListenableFutures</code>.
+     * @return  The thread executor service used for creating <code>CompletableFutures</code>.
      *
      * @since   1.0.0
      */
-    public ListeningScheduledExecutorService getExecutorService() {
+    public ScheduledExecutorService getExecutorService() {
         return executor;
     }
 
@@ -276,60 +277,6 @@ public class GameClient {
     }
 
     /**
-     * Connects the game client to it's associated Interactive integration on the Interactive service, using an OAuth
-     * Bearer token to authenticate itself with the Interactive service.
-     *
-     * @param   oauthToken
-     *          OAuth Bearer token
-     *
-     * @since   1.0.0
-     */
-    public void connect(String oauthToken) {
-        try {
-            connect(oauthToken, null, EndpointUtil.getInteractiveHost().getAddress());
-        }
-        catch (InteractiveNoHostsFoundException e) {
-            LOG.error(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Connects the game client to it's associated Interactive integration on the Interactive service, using an OAuth
-     * Bearer token to authenticate itself with the Interactive service and the appropriate share code for the
-     * integration.
-     *
-     * @param   oauthToken
-     *          OAuth Bearer token
-     * @param   shareCode
-     *          The share code provided by the author of the Interactive integration
-     *
-     * @since   1.0.0
-     */
-    public void connect(String oauthToken, String shareCode) {
-        try {
-            connect(oauthToken, shareCode, EndpointUtil.getInteractiveHost().getAddress());
-        }
-        catch (InteractiveNoHostsFoundException e) {
-            LOG.error(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
-     * using an OAuth Bearer token to authenticate itself with the Interactive service.
-     *
-     * @param   oauthToken
-     *          OAuth Bearer token
-     * @param   interactiveHost
-     *          <code>URI</code> for an Interactive service host
-     *
-     * @since   1.0.0
-     */
-    public void connect(String oauthToken, URI interactiveHost) {
-        connect(oauthToken, null, interactiveHost);
-    }
-
-    /**
      * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
      * using an OAuth Bearer token to authenticate itself with the Interactive service and the appropriate share code
      * for the integration.
@@ -338,13 +285,15 @@ public class GameClient {
      *          An OAuth Bearer token
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
-     * @param   interactiveHost
+     * @param   hostURI
      *          <code>URI</code> for an Interactive service host
      *
      * @since   1.0.0
      */
-    public void connect(String oauthToken, String shareCode, URI interactiveHost) {
-        if (oauthToken != null && !oauthToken.isEmpty() && interactiveHost != null) {
+    private boolean connectBlocking(String oauthToken, String shareCode, URI hostURI) throws InteractiveNoHostsFoundException {
+        if (oauthToken != null && !oauthToken.isEmpty()) {
+            URI interactiveHost = hostURI != null ? hostURI : EndpointUtil.getInteractiveHost().getAddress();
+
             if (shareCode != null && !shareCode.isEmpty()) {
                 webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, oauthToken, projectVersionId, shareCode);
             }
@@ -358,13 +307,14 @@ public class GameClient {
                     sslContext.init(null, null, null);
                     webSocketClient.setSocket(sslContext.getSocketFactory().createSocket());
                 }
-                webSocketClient.connectBlocking();
+                return webSocketClient.connectBlocking();
             }
             catch (InterruptedException | NoSuchAlgorithmException | IOException | KeyManagementException e) {
                 LOG.error(e.getMessage(), e);
                 webSocketClient = null;
             }
         }
+        return false;
     }
 
     /**
@@ -374,12 +324,12 @@ public class GameClient {
      * @param   oauthToken
      *          An OAuth Bearer token
      *
-     * @return  A <code>ListenableFuture</code> that completes when the connection attempt is finished
+     * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
      *
      * @since   1.0.0
      */
-    public ListenableFuture connectAsync(String oauthToken) {
-        return executor.submit(() -> connect(oauthToken));
+    public CompletableFuture<Boolean> connect(String oauthToken) {
+        return connect(oauthToken, null, null);
     }
 
     /**
@@ -392,12 +342,12 @@ public class GameClient {
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
      *
-     * @return  A <code>ListenableFuture</code> that completes when the connection attempt is finished
+     * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
      *
      * @since   1.0.0
      */
-    public ListenableFuture connectAsync(String oauthToken, String shareCode) {
-        return executor.submit(() -> connect(oauthToken, shareCode));
+    public CompletableFuture<Boolean> connect(String oauthToken, String shareCode) {
+        return connect(oauthToken, shareCode);
     }
 
     /**
@@ -409,12 +359,12 @@ public class GameClient {
      * @param   interactiveHost
      *          <code>URI</code> for an Interactive service host
      *
-     * @return  A <code>ListenableFuture</code> that completes when the connection attempt is finished
+     * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
      *
      * @since   1.0.0
      */
-    public ListenableFuture connectAsync(String oauthToken, URI interactiveHost) {
-        return executor.submit(() -> connect(oauthToken, interactiveHost));
+    public CompletableFuture<Boolean> connect(String oauthToken, URI interactiveHost) {
+        return connect(oauthToken, null, interactiveHost);
     }
 
     /**
@@ -429,43 +379,43 @@ public class GameClient {
      * @param   interactiveHost
      *          <code>URI</code> for an Interactive service host
      *
-     * @return  A <code>ListenableFuture</code> that completes when the connection attempt is finished
+     * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
      *
      * @since   1.0.0
      */
-    public ListenableFuture connectAsync(String oauthToken, String shareCode, URI interactiveHost) {
-        return executor.submit(() -> connect(oauthToken, shareCode, interactiveHost));
-    }
-
-    /**
-     * Disconnects the client from the Interactive service.
-     *
-     * @since   1.0.0
-     */
-    public void disconnect() {
-        if (isConnected()) {
+    public CompletableFuture<Boolean> connect(String oauthToken, String shareCode, URI interactiveHost) {
+        return CompletableFuture.supplyAsync(() -> {
             try {
-                webSocketClient.closeBlocking();
+                return connectBlocking(oauthToken, shareCode, interactiveHost);
             }
-            catch (InterruptedException e) {
-                LOG.error(e.getMessage(), e);
+            catch (InteractiveNoHostsFoundException e) {
+                throw new CompletionException(e);
             }
-            finally {
-                webSocketClient = null;
-            }
-        }
+        });
     }
 
     /**
      * Disconnects the client from the Interactive service.
      *
-     * @return  A <code>ListenableFuture</code> that completes when the client has been disconnected from the
+     * @return  A <code>CompletableFuture</code> that completes when the client has been disconnected from the
      *          Interactive service
      *
      * @since   1.0.0
      */
-    public ListenableFuture disconnectAsync() {
-        return executor.submit(this::disconnect);
+    public CompletableFuture<Void> disconnect() {
+        return CompletableFuture.runAsync(() -> {
+            if (isConnected()) {
+                try {
+                    webSocketClient.closeBlocking();
+                }
+                catch (InterruptedException e) {
+                    LOG.error(e.getMessage(), e);
+                }
+                finally {
+                    webSocketClient = null;
+                }
+            }
+        });
     }
 
     /**
@@ -503,48 +453,12 @@ public class GameClient {
      * @return  The new <code>CompressionScheme</code> that the client is to use to communicate with
      *          the Interactive service
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
      * @see     CompressionScheme
      *
      * @since   1.0.0
      */
-    public CompressionScheme setCompression(CompressionScheme ... schemes) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+    public CompletableFuture<CompressionScheme> setCompression(CompressionScheme ... schemes) {
         return setCompression(Arrays.stream(schemes).map(CompressionScheme::toString).collect(Collectors.toList()));
-    }
-
-    /**
-     * <p>Changes the compression algorithm the client uses to encode/decode messages to/from the Interactive
-     * service.</p>
-     *
-     * <p>Developers supply a collection of preferred schemes in order of preference, from greatest to least preference,
-     * from which the Interactive service will select a preferred common one. All subsequent requests and replies will
-     * be sent in using the new compression scheme.</p>
-     *
-     * <p>If no preferred common scheme is found, the Interactive server will fall back to the
-     * {@link CompressionScheme#NONE plain text} scheme.</p>
-     *
-     * @param   schemes
-     *          An <code>Collection</code> of preferred <code>CompressionSchemes</code> in order of preference, from
-     *          greatest to least preference
-     *
-     * @return  The new <code>CompressionScheme</code> that the client is to use to communicate with
-     *          the Interactive service
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     CompressionScheme
-     *
-     * @since   1.0.0
-     */
-    public CompressionScheme setCompression(Collection<String> schemes) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return setCompression(schemes.toArray(new String[0]));
     }
 
     /**
@@ -565,16 +479,37 @@ public class GameClient {
      * @return  The new <code>CompressionScheme</code> that the client is to use to communicate with
      *          the Interactive service
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @see     CompressionScheme
+     *
+     * @since   1.0.0
+     */
+    public CompletableFuture<CompressionScheme> setCompression(String ... schemes) {
+        return setCompression(Arrays.asList(schemes));
+    }
+
+    /**
+     * <p>Changes the compression algorithm the client uses to encode/decode messages to/from the Interactive
+     * service.</p>
+     *
+     * <p>Developers supply a collection of preferred schemes in order of preference, from greatest to least preference,
+     * from which the Interactive service will select a preferred common one. All subsequent requests and replies will
+     * be sent in using the new compression scheme.</p>
+     *
+     * <p>If no preferred common scheme is found, the Interactive server will fall back to the
+     * {@link CompressionScheme#NONE plain text} scheme.</p>
+     *
+     * @param   schemes
+     *          An <code>Collection</code> of preferred <code>CompressionSchemes</code> in order of preference, from
+     *          greatest to least preference
+     *
+     * @return  The new <code>CompressionScheme</code> that the client is to use to communicate with
+     *          the Interactive service
      *
      * @see     CompressionScheme
      *
      * @since   1.0.0
      */
-    public CompressionScheme setCompression(String ... schemes) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+    public CompletableFuture<CompressionScheme> setCompression(Collection<String> schemes) {
         JsonObject jsonParams = new JsonObject();
         List<String> compressionSchemes = new ArrayList<>();
         for (String scheme : schemes) {
@@ -583,32 +518,18 @@ public class GameClient {
             }
         }
         jsonParams.add(PARAM_KEY_COMPRESSION_SCHEME, GSON.toJsonTree(compressionSchemes));
-        CompressionScheme compressionScheme = CompressionScheme.from(using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.SET_COMPRESSION, jsonParams, PARAM_KEY_COMPRESSION_SCHEME, String.class));
-        webSocketClient.setCompressionScheme(compressionScheme);
-        return compressionScheme;
-    }
 
-    /**
-     * Retrieves the current server time from the Interactive service, given as a milliseconds UTC unix timestamp.
-     *
-     * @return  The Interactive service's current server time, given as a UTC unix timestamp (in milliseconds)
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public Long getTime() throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_TIME, EMPTY_JSON_OBJECT, PARAM_KEY_TIME, Long.class);
+        CompletableFuture<String> future = using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.SET_COMPRESSION, jsonParams, PARAM_KEY_COMPRESSION_SCHEME, String.class);
+        CompletableFuture<CompressionScheme> compressionFuture = future.thenApply(CompressionScheme::from);
+        compressionFuture.thenAcceptAsync(compressionScheme -> webSocketClient.setCompressionScheme(compressionScheme));
+        return compressionFuture;
     }
 
     /**
      * <p>Retrieves the current server time from the Interactive service, given as a milliseconds UTC unix timestamp.
      * </p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -620,15 +541,15 @@ public class GameClient {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns the Interactive service's current server
+     * @return  A <code>CompletableFuture</code> that when complete returns the Interactive service's current server
      *          time, given as a UTC unix timestamp (in milliseconds)
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Long> getTimeAsync() {
-        return using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.GET_TIME, EMPTY_JSON_OBJECT, PARAM_KEY_TIME, Long.class);
+    public CompletableFuture<Long> getTime() {
+        return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_TIME, EMPTY_JSON_OBJECT, PARAM_KEY_TIME, Long.class);
     }
 
     /**
@@ -637,29 +558,7 @@ public class GameClient {
      * well as a breakdown of how much memory is allocated where. This information is provided for debugging purposes.
      * </p>
      *
-     * @return  A <code>InteractiveMemoryStatistic</code> representing the current memory usage of the Interactive
-     *          integration the client is connected to
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveMemoryStatistic
-     *
-     * @since   1.0.0
-     */
-    public InteractiveMemoryStatistic getMemoryStats() throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_MEMORY_STATS, EMPTY_JSON_OBJECT, InteractiveMemoryStatistic.class);
-    }
-
-    /**
-     * <p>Retrieves the current memory usage for the Interactive integration this client is connected to on the
-     * Interactive service. The memory usage returned is a dump of information regarding current memory allocations, as
-     * well as a breakdown of how much memory is allocated where. This information is provided for debugging purposes.
-     * </p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -671,40 +570,17 @@ public class GameClient {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>InteractiveMemoryStatistic</code>
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>InteractiveMemoryStatistic</code>
      *          representing the current memory usage of the Interactive integration the client is connected to
      *
      * @see     InteractiveMemoryStatistic
      *
      * @since   1.0.0
      */
-    public ListenableFuture<InteractiveMemoryStatistic> getMemoryStatsAsync() {
-        return using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.GET_MEMORY_STATS, EMPTY_JSON_OBJECT, InteractiveMemoryStatistic.class);
-    }
-
-    /**
-     * Retrieves statistics on the state of throttling rules set up in {@link InteractiveMethod#SET_BANDWIDTH_THROTTLE}
-     * method requests. It returns the number of sent packets (ones inserted into the bucket) and the number of rejected
-     * packets for each method that has a throttle set.
-     *
-     * @return  A <code>Map</code> of <code>InteractiveMethods</code> and their associated
-     *          <code>ThrottleState</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     BandwidthThrottle
-     * @see     InteractiveMethod
-     * @see     ThrottleState
-     *
-     * @since   1.0.0
-     */
-    public Map<InteractiveMethod, ThrottleState> getThrottleState() throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_THROTTLE_STATE, JsonNull.INSTANCE, THROTTLE_STATE_MAP_TYPE);
+    public CompletableFuture<InteractiveMemoryStatistic> getMemoryStats() {
+        return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_MEMORY_STATS, EMPTY_JSON_OBJECT, InteractiveMemoryStatistic.class);
     }
 
     /**
@@ -712,7 +588,7 @@ public class GameClient {
      * {@link InteractiveMethod#SET_BANDWIDTH_THROTTLE} method requests. It returns the number of sent packets (ones
      * inserted into the bucket) and the number of rejected packets for each method that has a throttle set.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -724,9 +600,9 @@ public class GameClient {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Map</code> of
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> of
      *          <code>InteractiveMethods</code> and their associated <code>ThrottleState</code>
      *
      * @see     BandwidthThrottle
@@ -735,8 +611,8 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Map<InteractiveMethod, ThrottleState>> getThrottleStateAsync() {
-        return using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.GET_THROTTLE_STATE, JsonNull.INSTANCE, THROTTLE_STATE_MAP_TYPE);
+    public CompletableFuture<Map<InteractiveMethod, ThrottleState>> getThrottleState() {
+        return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_THROTTLE_STATE, JsonNull.INSTANCE, THROTTLE_STATE_MAP_TYPE);
     }
 
     /**
@@ -749,37 +625,7 @@ public class GameClient {
      * method names and their associated throttle rules. Throttling previously enabled on a method can be disabled by
      * setting it to null.</p>
      *
-     * @param   throttleMap
-     *          A <code>Map</code> of <code>InteractiveMethods</code> and their associated
-     *          <code>BandwidthThrottle</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     BandwidthThrottle
-     * @see     InteractiveMethod
-     *
-     * @since   1.0.0
-     */
-    public void setBandwidthThrottle(Map<InteractiveMethod, BandwidthThrottle> throttleMap) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        if (throttleMap != null) {
-            using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.SET_BANDWIDTH_THROTTLE, GSON.toJsonTree(throttleMap));
-        }
-    }
-
-    /**
-     * <p>Sets up throttling for certain server-to-client method calls, such as {@link InteractiveMethod#GIVE_INPUT},
-     * which could become problematic in very high-traffic scenarios.</p>
-     *
-     * <p>The Interactive service implements a
-     * <a target="_blank" href="https://en.wikipedia.org/wiki/Leaky_bucket">leaky bucket algorithm</a>; the client
-     * specifies the total bucket capacity in bytes and its drain rate in bytes per second. The client supplies a map of
-     * method names and their associated throttle rules. Throttling previously enabled on a method can be disabled by
-     * setting it to null.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -791,13 +637,13 @@ public class GameClient {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   throttleMap
      *          A <code>Map</code> of <code>InteractiveMethods</code> and their associated
      *          <code>BandwidthThrottle</code>
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
      *          {@link InteractiveMethod#SET_BANDWIDTH_THROTTLE setBandwidthThrottle} method call completes with no
      *          errors
      *
@@ -806,10 +652,10 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Boolean> setBandwidthThrottleAsync(Map<InteractiveMethod, BandwidthThrottle> throttleMap) {
+    public CompletableFuture<Boolean> setBandwidthThrottle(Map<InteractiveMethod, BandwidthThrottle> throttleMap) {
         return throttleMap != null
-                ? using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.SET_BANDWIDTH_THROTTLE, GSON.toJsonTree(throttleMap))
-                : Futures.immediateFuture(true);
+                ? using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.SET_BANDWIDTH_THROTTLE, GSON.toJsonTree(throttleMap))
+                : CompletableFuture.completedFuture(true);
     }
 
     /**

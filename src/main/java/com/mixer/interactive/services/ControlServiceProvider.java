@@ -1,8 +1,6 @@
 package com.mixer.interactive.services;
 
 import com.google.common.reflect.TypeToken;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
@@ -13,13 +11,12 @@ import com.mixer.interactive.resources.group.InteractiveGroup;
 import com.mixer.interactive.resources.scene.InteractiveScene;
 
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.mixer.interactive.GameClient.RPC_SERVICE_PROVIDER;
+import static com.mixer.interactive.GameClient.SCENE_SERVICE_PROVIDER;
 
 /**
  * Provides all functionality relating to making requests and interpreting replies from the Interactive service
@@ -59,63 +56,9 @@ public class ControlServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * Creates one or more new controls in a scene. The client MUST provide a fully qualified, tagged control object in
-     * this method.
+     * <p>Retrieves all the controls for the Interactive integration.</p>
      *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> that will contain the controls being created
-     * @param   controls
-     *          An array of <code>InteractiveControls</code> to be created
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public void createControls(String sceneID, InteractiveControl ... controls) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        if (sceneID != null && controls != null) {
-            createControls(sceneID, Arrays.asList(controls));
-        }
-    }
-
-    /**
-     * Creates one or more new controls in a scene. The client MUST provide a fully qualified, tagged control object in
-     * this method.
-     *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> that will contain the controls being created
-     * @param   controls
-     *          A <code>Collection</code> of <code>InteractiveControls</code> to be created
-     *
-     * @throws InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public void createControls(String sceneID, Collection<InteractiveControl> controls) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        if (sceneID != null && controls != null) {
-            JsonObject jsonParams = new JsonObject();
-            jsonParams.addProperty(PARAM_KEY_SCENE_ID, sceneID);
-            jsonParams.add(PARAM_KEY_CONTROLS, GameClient.GSON.toJsonTree(controls));
-            gameClient.using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.CREATE_CONTROLS, jsonParams);
-        }
-    }
-
-    /**
-     * <p>Creates one or more new controls in a scene. The client MUST provide a fully qualified, tagged control object
-     * in this method.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -127,30 +70,29 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> that will contain the controls being created
-     * @param   controls
-     *          An array of <code>InteractiveControls</code> to be created
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#CREATE_CONTROLS createControls} method call completes with no errors
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Set</code> of
+     *          <code>InteractiveControls</code> for the currently connected Interactive integration
      *
      * @see     InteractiveControl
-     * @see     InteractiveScene
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
-    public ListenableFuture<Boolean> createControlsAsync(String sceneID, InteractiveControl ... controls) {
-        return (sceneID != null && controls != null) ? createControlsAsync(sceneID, Arrays.asList(controls)) : Futures.immediateFuture(false);
+    public final CompletableFuture<Set<InteractiveControl>> getControls() {
+        return gameClient.using(SCENE_SERVICE_PROVIDER).getScenes()
+                .thenCompose(scenes -> {
+                    Set<InteractiveControl> controls = new HashSet<>();
+                    scenes.forEach(scene -> controls.addAll(scene.getControls()));
+                    return CompletableFuture.completedFuture(controls);
+                });
     }
 
     /**
-     * <p>Creates one or more new controls in a scene. The client MUST provide a fully qualified, tagged control object
-     * in this method.</p>
+     * <p>Creates one or more new controls. Control IDs MUST be unique and not already exist in the Interactive
+     * integration.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -162,59 +104,234 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
+     *
+     * @param   controls
+     *          An array of <code>InteractiveControls</code> to be created
+     *
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> containing mappings of
+     *          <code>InteractiveControls</code> to the respective <code>CompletableFuture</code> holding the result
+     *          of the request.
+     *
+     * @since   2.0.0
+     */
+    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Boolean>>> create(InteractiveControl ... controls) {
+        return create(Arrays.asList(controls));
+    }
+
+    /**
+     * <p>Creates one or more new controls. Control IDs MUST be unique and not already exist in the Interactive
+     * integration.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
+     *
+     * @param   controls
+     *          A <code>Collection</code> of <code>InteractiveControls</code> to be created
+     *
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> containing mappings of
+     *          <code>InteractiveControls</code> to the respective <code>CompletableFuture</code> holding the result
+     *          of the request.
+     *
+     * @since   2.0.0
+     */
+    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Boolean>>> create(Collection<InteractiveControl> controls) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<InteractiveControl, CompletableFuture<Boolean>> createPromises = new HashMap<>();
+            groupControls(controls).forEach((sceneId, interactiveControls) -> {
+                if (interactiveControls != null) {
+                    CompletableFuture<Boolean> createPromise = create(sceneId, interactiveControls);
+                    interactiveControls.forEach(control -> createPromises.put(control, createPromise));
+                }
+            });
+            return createPromises;
+        });
+    }
+
+    /**
+     * <p>Creates one or more new controls in a scene. The client MUST provide a fully qualified, tagged control object
+     * in this method.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   sceneID
      *          Identifier for an <code>InteractiveScene</code> that will contain the controls being created
      * @param   controls
      *          A <code>Collection</code> of <code>InteractiveControls</code> to be created
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#CREATE_CONTROLS createControls} method call completes with no errors
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#CREATE_CONTROLS create} method call completes with no errors
      *
      * @see     InteractiveControl
      * @see     InteractiveScene
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Boolean> createControlsAsync(String sceneID, Collection<InteractiveControl> controls) {
+    private CompletableFuture<Boolean> create(String sceneID, Collection<InteractiveControl> controls) {
         if (sceneID == null || controls == null) {
-            return Futures.immediateFuture(false);
+            return CompletableFuture.completedFuture(false);
         }
 
         JsonObject jsonParams = new JsonObject();
         jsonParams.addProperty(PARAM_KEY_SCENE_ID, sceneID);
         jsonParams.add(PARAM_KEY_CONTROLS, GameClient.GSON.toJsonTree(controls));
-        return gameClient.using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.CREATE_CONTROLS, jsonParams);
+        return gameClient.using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.CREATE_CONTROLS, jsonParams);
     }
 
     /**
-     * <p>Updates control objects already present in a scene. The Interactive service will reply with a set of updated
-     * controls.</p>
+     * <p>Updates one or more new controls.</p>
      *
-     * <p>The Interactive service will either update all the controls provided, or fail in which case NONE of the
-     * controls provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * controls.</p>
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
      *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be updated
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
+     *
      * @param   controls
      *          An array of <code>InteractiveControls</code> to be updated
      *
-     * @return  A <code>Set</code> of updated <code>InteractiveControls</code>
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> containing mappings of
+     *          <code>InteractiveControls</code> to the respective <code>CompletableFuture</code> holding the result
+     *          of the request.
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
+     * @since   2.0.0
      */
-    public Set<InteractiveControl> updateControls(String sceneID, InteractiveControl ... controls) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return updateControls(0, sceneID, controls);
+    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>>> update(InteractiveControl ... controls) {
+        return update(0, Arrays.asList(controls));
+    }
+
+    /**
+     * <p>Updates one or more new controls.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   controls
+     *          An array of <code>InteractiveControls</code> to be updated
+     *
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> containing mappings of
+     *          <code>InteractiveControls</code> to the respective <code>CompletableFuture</code> holding the result
+     *          of the request.
+     *
+     * @since   2.0.0
+     */
+    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>>> update(int priority, InteractiveControl ... controls) {
+        return update(priority, Arrays.asList(controls));
+    }
+
+    /**
+     * <p>Updates one or more new controls.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
+     *
+     * @param   controls
+     *          A <code>Collection</code> of <code>InteractiveControls</code> to be updated
+     *
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> containing mappings of
+     *          <code>InteractiveControls</code> to the respective <code>CompletableFuture</code> holding the result
+     *          of the request.
+     *
+     * @since   2.0.0
+     */
+    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>>> update(Collection<InteractiveControl> controls) {
+        return update(0, controls);
+    }
+
+    /**
+     * <p>Updates one or more new controls.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
+     *
+     * @param   priority
+     *          The priority value for the update
+     * @param   controls
+     *          A <code>Collection</code> of <code>InteractiveControls</code> to be updated
+     *
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> containing mappings of
+     *          <code>InteractiveControls</code> to the respective <code>CompletableFuture</code> holding the result
+     *          of the request.
+     *
+     * @since   2.0.0
+     */
+    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>>> update(int priority, Collection<InteractiveControl> controls) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>> updatePromises = new HashMap<>();
+            groupControls(controls).forEach((sceneId, interactiveControls) -> {
+                if (interactiveControls != null) {
+                    CompletableFuture<Set<InteractiveControl>> updatePromise = update(priority, sceneId, interactiveControls);
+                    interactiveControls.forEach(control -> updatePromises.put(control, updatePromise));
+                }
+            });
+            return updatePromises;
+        });
     }
 
     /**
@@ -224,89 +341,39 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      * <p>The Interactive service will either update all the controls provided, or fail in which case NONE of the
      * controls provided will be updated. In no case will the Interactive service apply updates to a subset of
      * controls.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   priority
      *          The priority value for the update
      * @param   sceneID
      *          Identifier for an <code>InteractiveScene</code> containing the controls to be updated
      * @param   controls
-     *          An array of <code>InteractiveControls</code> to be updated
-     *
-     * @return  A <code>Set</code> of updated <code>InteractiveControls</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public Set<InteractiveControl> updateControls(int priority, String sceneID, InteractiveControl ... controls) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return (sceneID != null && controls != null) ? updateControls(priority, sceneID, Arrays.asList(controls)) : Collections.emptySet();
-    }
-
-    /**
-     * <p>Updates control objects already present in a scene. The Interactive service will reply with a set of updated
-     * controls.</p>
-     *
-     * <p>The Interactive service will either update all the controls provided, or fail in which case NONE of the
-     * controls provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * controls.</p>
-     *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be updated
-     * @param   controls
      *          A <code>Collection</code> of <code>InteractiveControls</code> to be updated
      *
-     * @return  A <code>Set</code> of updated <code>InteractiveControls</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Set</code> of updated
+     *          <code>InteractiveControls</code>
      *
      * @see     InteractiveControl
      * @see     InteractiveScene
      *
      * @since   1.0.0
      */
-    public Set<InteractiveControl> updateControls(String sceneID, Collection<InteractiveControl> controls) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return updateControls(0, sceneID, controls);
-    }
-
-    /**
-     * <p>Updates control objects already present in a scene. The Interactive service will reply with a set of updated
-     * controls.</p>
-     *
-     * <p>The Interactive service will either update all the controls provided, or fail in which case NONE of the
-     * controls provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * controls.</p>
-     *
-     * @param   priority
-     *          The priority value for the update
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be updated
-     * @param   controls
-     *          A <code>Collection</code> of <code>InteractiveControls</code> to be updated
-     *
-     * @return  A <code>Set</code> of updated <code>InteractiveControls</code>
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public Set<InteractiveControl> updateControls(int priority, String sceneID, Collection<InteractiveControl> controls) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+    private CompletableFuture<Set<InteractiveControl>> update(int priority, String sceneID, Collection<InteractiveControl> controls) {
         if (sceneID == null || controls == null) {
-            return Collections.emptySet();
+            return CompletableFuture.completedFuture(Collections.emptySet());
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -317,14 +384,9 @@ public class ControlServiceProvider extends AbstractServiceProvider {
     }
 
     /**
-     * <p>Updates control objects already present in a scene. The Interactive service will reply with a set of updated
-     * controls.</p>
+     * <p>Deletes one or more new controls.</p>
      *
-     * <p>The Interactive service will either update all the controls provided, or fail in which case NONE of the
-     * controls provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * controls.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -336,345 +398,113 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be updated
-     * @param   controls
-     *          An array of <code>InteractiveControls</code> to be updated
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveControls</code>
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Set<InteractiveControl>> updateControlsAsync(String sceneID, InteractiveControl ... controls) {
-        return updateControlsAsync(0, sceneID, controls);
-    }
-
-    /**
-     * <p>Updates control objects already present in a scene. The Interactive service will reply with a set of updated
-     * controls.</p>
-     *
-     * <p>The Interactive service will either update all the controls provided, or fail in which case NONE of the
-     * controls provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * controls.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   priority
-     *          The priority value for the update
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be updated
-     * @param   controls
-     *          An array of <code>InteractiveControls</code> to be updated
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveControls</code>
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Set<InteractiveControl>> updateControlsAsync(int priority, String sceneID, InteractiveControl ... controls) {
-        return (sceneID != null && controls != null) ? updateControlsAsync(priority, sceneID, Arrays.asList(controls)) : Futures.immediateFuture(Collections.emptySet());
-    }
-
-    /**
-     * <p>Updates control objects already present in a scene. The Interactive service will reply with a set of updated
-     * controls.</p>
-     *
-     * <p>The Interactive service will either update all the controls provided, or fail in which case NONE of the
-     * controls provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * controls.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be updated
-     * @param   controls
-     *          A <code>Collection</code> of <code>InteractiveControls</code> to be updated
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveControls</code>
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Set<InteractiveControl>> updateControlsAsync(String sceneID, Collection<InteractiveControl> controls) {
-        return updateControlsAsync(0, sceneID, controls);
-    }
-
-    /**
-     * <p>Updates control objects already present in a scene. The Interactive service will reply with a set of updated
-     * controls.</p>
-     *
-     * <p>The Interactive service will either update all the controls provided, or fail in which case NONE of the
-     * controls provided will be updated. In no case will the Interactive service apply updates to a subset of
-     * controls.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   priority
-     *          The priority value for the update
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be updated
-     * @param   controls
-     *          A <code>Collection</code> of <code>InteractiveControls</code> to be updated
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>Set</code> of updated
-     *          <code>InteractiveControls</code>
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Set<InteractiveControl>> updateControlsAsync(int priority, String sceneID, Collection<InteractiveControl> controls) {
-        if (sceneID == null || controls == null) {
-            return Futures.immediateFuture(Collections.emptySet());
-        }
-
-        JsonObject jsonParams = new JsonObject();
-        jsonParams.addProperty(PARAM_KEY_SCENE_ID, sceneID);
-        jsonParams.add(PARAM_KEY_CONTROLS, GameClient.GSON.toJsonTree(controls));
-        jsonParams.addProperty(PARAM_UPDATE_PRIORITY, priority);
-        return gameClient.using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.UPDATE_CONTROLS, jsonParams, PARAM_KEY_CONTROLS, CONTROL_SET_TYPE);
-    }
-
-    /**
-     * Removes one or more controls from the provided scene.
-     *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be deleted
-     * @param   controls
-     *          A <code>Collection</code> of <code>InteractiveControls</code> to be deleted
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public void deleteControls(String sceneID, Collection<InteractiveControl> controls) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        if (sceneID != null && controls != null) {
-            deleteControls(sceneID, controls.toArray(new InteractiveControl[0]));
-        }
-    }
-
-    /**
-     * Removes one or more controls from the provided scene.
-     *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be deleted
      * @param   controls
      *          An array of <code>InteractiveControls</code> to be deleted
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> containing mappings of
+     *          <code>InteractiveControls</code> to the respective <code>CompletableFuture</code> holding the result
+     *          of the request.
      *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
+     * @since   2.0.0
      */
-    public void deleteControls(String sceneID, InteractiveControl ... controls) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        if (sceneID != null && controls != null) {
-            deleteControls(sceneID, Arrays.stream(controls)
-                    .map(InteractiveControl::getControlID)
-                    .collect(Collectors.toSet())
-                    .toArray(new String[0]));
-        }
+    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Boolean>>> delete(InteractiveControl ... controls) {
+        return delete(Arrays.asList(controls));
     }
 
     /**
-     * Removes one or more controls from the provided scene.
+     * <p>Deletes one or more new controls.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
+     *
+     * @param   controls
+     *          A <code>Collection</code> of <code>InteractiveControls</code> to be deleted
+     *
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>Map</code> containing mappings of
+     *          <code>InteractiveControls</code> to the respective <code>CompletableFuture</code> holding the result
+     *          of the request.
+     *
+     * @since   2.0.0
+     */
+    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Boolean>>> delete(Collection<InteractiveControl> controls) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<InteractiveControl, CompletableFuture<Boolean>> deletePromises = new HashMap<>();
+            groupControls(controls).forEach((sceneId, interactiveControls) -> {
+                if (interactiveControls != null) {
+                    CompletableFuture<Boolean> deletePromise = delete(sceneId, interactiveControls.stream().map(InteractiveControl::getControlID).collect(Collectors.toSet()));
+                    interactiveControls.forEach(control -> deletePromises.put(control, deletePromise));
+                }
+            });
+            return deletePromises;
+        });
+    }
+
+    /**
+     * <p>Removes one or more controls from the provided scene.</p>
+     *
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
+     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
+     * exceptions may be thrown:</p>
+     *
+     * <ul>
+     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
+     *  service.</li>
+     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
+     *  contains an <code>InteractiveError</code>.</li>
+     * </ul>
+     *
+     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   sceneID
      *          Identifier for an <code>InteractiveScene</code> containing the controls to be deleted
      * @param   controlIDs
-     *          An array of identifiers for <code>InteractiveControls</code> to be deleted
+     *          A <code>Collection</code> of identifiers for <code>InteractiveControls</code> to be deleted
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#DELETE_CONTROLS delete} method call completes with no errors
      *
      * @see     InteractiveControl
      * @see     InteractiveScene
      *
      * @since   1.0.0
      */
-    public void deleteControls(String sceneID, String ... controlIDs) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        if (sceneID != null && controlIDs != null) {
-            JsonObject jsonParams = new JsonObject();
-            jsonParams.addProperty(PARAM_KEY_SCENE_ID, sceneID);
-            jsonParams.add(PARAM_KEY_CONTROL_IDS, GameClient.GSON.toJsonTree(controlIDs, String[].class));
-            gameClient.using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.DELETE_CONTROLS, jsonParams);
-        }
-    }
-
-    /**
-     * <p>Removes one or more controls from the provided scene.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be deleted
-     * @param   controls
-     *          A <code>Collection</code> of <code>InteractiveControls</code> to be deleted
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_CONTROLS deleteControls} method call completes with no errors
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Boolean> deleteControlsAsync(String sceneID, Collection<InteractiveControl> controls) {
-        return (sceneID != null && controls != null) ? deleteControlsAsync(sceneID, controls.toArray(new InteractiveControl[0])) : Futures.immediateFuture(false);
-    }
-
-    /**
-     * <p>Removes one or more controls from the provided scene.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be deleted
-     * @param   controls
-     *          An array of <code>InteractiveControls</code> to be deleted
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_CONTROLS deleteControls} method call completes with no errors
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Boolean> deleteControlsAsync(String sceneID, InteractiveControl ... controls) {
-        if (sceneID == null || controls == null) {
-            return Futures.immediateFuture(false);
-        }
-
-        return deleteControlsAsync(sceneID, Arrays.stream(controls)
-                .map(InteractiveControl::getControlID)
-                .collect(Collectors.toSet())
-                .toArray(new String[0]));
-    }
-
-    /**
-     * <p>Removes one or more controls from the provided scene.</p>
-     *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
-     * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
-     * exceptions may be thrown:</p>
-     *
-     * <ul>
-     *  <li>{@link InteractiveRequestNoReplyException} may be thrown if no reply is received from the Interactive
-     *  service.</li>
-     *  <li>{@link InteractiveReplyWithErrorException} may be thrown if the reply received from the Interactive service
-     *  contains an <code>InteractiveError</code>.</li>
-     * </ul>
-     *
-     * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
-     *
-     * @param   sceneID
-     *          Identifier for an <code>InteractiveScene</code> containing the controls to be deleted
-     * @param   controlIDs
-     *          An array of identifiers for <code>InteractiveControls</code> to be deleted
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_CONTROLS deleteControls} method call completes with no errors
-     *
-     * @see     InteractiveControl
-     * @see     InteractiveScene
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Boolean> deleteControlsAsync(String sceneID, String ... controlIDs) {
+    private CompletableFuture<Boolean> delete(String sceneID, Collection<String> controlIDs) {
         if (sceneID == null || controlIDs == null) {
-            return Futures.immediateFuture(false);
+            return CompletableFuture.completedFuture(false);
         }
 
         JsonObject jsonParams = new JsonObject();
         jsonParams.addProperty(PARAM_KEY_SCENE_ID, sceneID);
-        jsonParams.add(PARAM_KEY_CONTROL_IDS, GameClient.GSON.toJsonTree(controlIDs, String[].class));
-        return gameClient.using(RPC_SERVICE_PROVIDER).makeRequestAsync(InteractiveMethod.DELETE_CONTROLS, jsonParams);
+        jsonParams.add(PARAM_KEY_CONTROL_IDS, GameClient.GSON.toJsonTree(controlIDs));
+        return gameClient.using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.DELETE_CONTROLS, jsonParams);
+    }
+
+    /**
+     * Groups controls by scene id.
+     *
+     * @param   controls
+     *          A <code>Collection</code> of <code>InteractiveControls</code>
+     *
+     * @return  A <code>Map</code> containing <code>Collections</code> of <code>InteractiveControls</code> partitioned by
+     *          the <code>String</code> scene id for the scene they are a member of.
+     *
+     * @since   2.0.0
+     */
+    private Map<String, Set<InteractiveControl>> groupControls(Collection<InteractiveControl> controls) {
+        return controls.stream().collect(Collectors.groupingBy(InteractiveControl::getSceneID, Collectors.toSet()));
     }
 }

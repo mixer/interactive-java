@@ -1,6 +1,5 @@
 package com.mixer.interactive.resources.control;
 
-import com.google.common.base.Objects;
 import com.mixer.interactive.resources.InteractiveResource;
 
 import java.util.Collection;
@@ -38,7 +37,7 @@ public class JoystickControl extends InteractiveControl<JoystickControl> {
      * @since   1.0.0
      */
     public JoystickControl(String controlID) {
-        this(controlID, null, new InteractiveControlPosition[0]);
+        this(controlID, null);
     }
 
     /**
@@ -80,7 +79,7 @@ public class JoystickControl extends InteractiveControl<JoystickControl> {
      */
     public JoystickControl setSampleRate(Integer sampleRate) {
         this.sampleRate = sampleRate;
-        return getThis();
+        return this;
     }
 
     /**
@@ -106,7 +105,7 @@ public class JoystickControl extends InteractiveControl<JoystickControl> {
      */
     public JoystickControl setAngle(Number angle) {
         this.angle = angle;
-        return getThis();
+        return this;
     }
 
     /**
@@ -132,7 +131,7 @@ public class JoystickControl extends InteractiveControl<JoystickControl> {
      */
     public JoystickControl setIntensity(Number intensity) {
         this.intensity = intensity;
-        return getThis();
+        return this;
     }
 
     /**
@@ -148,31 +147,33 @@ public class JoystickControl extends InteractiveControl<JoystickControl> {
     }
 
     /**
-     * Iterates through a <code>Collection</code> of <code>JoystickControls</code>. If <code>this</code> is found to be
-     * in the <code>Collection</code> then <code>this</code> has it's values updated.
+     * Iterates through a <code>Collection</code> of Objects. If <code>this</code> is found to be in the
+     * <code>Collection</code> then <code>this</code> has it's values updated.
      *
      * @param   objects
-     *          A <code>Collection</code> of <code>JoystickControls</code>
+     *          A <code>Collection</code> of Objects
      *
-     * @return  <code>this</code> for method chaining
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          provided <code>Collection</code> contains <code>this</code>
      *
      * @see     InteractiveResource#syncIfEqual(Collection)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public JoystickControl syncIfEqual(Collection<? extends JoystickControl> objects) {
+    public boolean syncIfEqual(Collection<?> objects) {
         if (objects != null) {
-            for (JoystickControl object : objects) {
-                if (this.equals(object)) {
-                    this.meta = object.meta;
-                    this.setDisabled(object.isDisabled());
-                    this.sampleRate = object.sampleRate;
-                    this.angle = object.angle;
-                    this.intensity = object.intensity;
+            for (Object o : objects) {
+                if (o instanceof JoystickControl && this.equals(o)) {
+                    this.meta = ((JoystickControl) o).meta;
+                    this.setDisabled(((JoystickControl) o).isDisabled());
+                    this.sampleRate = ((JoystickControl) o).sampleRate;
+                    this.angle = ((JoystickControl) o).angle;
+                    this.intensity = ((JoystickControl) o).intensity;
+                    return true;
                 }
             }
         }
-        return getThis();
+        return false;
     }
 }

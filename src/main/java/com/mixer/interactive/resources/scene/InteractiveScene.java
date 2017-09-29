@@ -1,15 +1,9 @@
 package com.mixer.interactive.resources.scene;
 
-import com.google.common.base.Objects;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hashing;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
-import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
-import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
 import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.resources.IInteractiveCreatable;
 import com.mixer.interactive.resources.IInteractiveDeletable;
@@ -21,11 +15,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.concurrent.CompletableFuture;
 
 import static com.mixer.interactive.GameClient.SCENE_SERVICE_PROVIDER;
 
@@ -38,7 +31,7 @@ import static com.mixer.interactive.GameClient.SCENE_SERVICE_PROVIDER;
  */
 public class InteractiveScene
         extends InteractiveResource<InteractiveScene>
-        implements IInteractiveCreatable<InteractiveScene>, IInteractiveDeletable, Comparable<InteractiveScene> {
+        implements IInteractiveCreatable, IInteractiveDeletable, Comparable<InteractiveScene> {
 
     /**
      * Logger.
@@ -197,128 +190,6 @@ public class InteractiveScene
     }
 
     /**
-     * Add <code>InteractiveControls</code> to this scene.
-     *
-     * @param   controls
-     *          An array of <code>InteractiveControls</code> to be added to this scene
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public InteractiveScene addControls(InteractiveControl ... controls) {
-        return addControls(Arrays.asList(controls));
-    }
-
-    /**
-     * Add <code>InteractiveControls</code> to this scene.
-     *
-     * @param   controls
-     *          A <code>Collection</code> of <code>InteractiveControls</code> to be added to this scene
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public InteractiveScene addControls(Collection<InteractiveControl> controls) {
-        this.controls.addAll(controls);
-        return getThis();
-    }
-
-    /**
-     * Add a <code>InteractiveControl</code> to this scene.
-     *
-     * @param   supplier
-     *          <code>Supplier</code> of a <code>InteractiveControl</code> that will be added to this scene
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public InteractiveScene supplyControl(Supplier<InteractiveControl> supplier) {
-        if (supplier != null) {
-            return addControls(supplier.get());
-        }
-        return getThis();
-    }
-
-    /**
-     * Remove <code>InteractiveControls</code> from this scene.
-     *
-     * @param   controls
-     *          An array of <code>InteractiveControls</code> to be removed from this scene
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public InteractiveScene removeControls(InteractiveControl ... controls) {
-        if (controls != null) {
-            for (InteractiveControl control : controls) {
-                this.controls.remove(control);
-            }
-        }
-        return getThis();
-    }
-
-    /**
-     * Remove <code>InteractiveControls</code> from this scene.
-     *
-     * @param   controlIDs
-     *          An array of identifiers representing <code>InteractiveControls</code> to be removed from this scene
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public InteractiveScene removeControls(String ... controlIDs) {
-        for (String controlID : controlIDs) {
-            controls.removeIf(control -> controlID.equals(control.getControlID()));
-        }
-        return getThis();
-    }
-
-    /**
-     * Remove all <code>InteractiveControls</code> from this scene.
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public InteractiveScene removeAllControls() {
-        controls.clear();
-        return getThis();
-    }
-
-    /**
-     * Sets the <code>InteractiveControls</code> for this scene, clearing out any pre-existing ones.
-     *
-     * @param   controls
-     *          An array of <code>InteractiveControls</code> to be added to this scene
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public InteractiveScene setControls(InteractiveControl ... controls) {
-        return removeAllControls().addControls(controls);
-    }
-
-    /**
-     * Sets the <code>InteractiveControls</code> for this scene, clearing out any pre-existing ones.
-     *
-     * @param   controls
-     *          A <code>Collection</code> of <code>InteractiveControls</code> to be added to this scene
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public InteractiveScene setControls(Collection<InteractiveControl> controls) {
-        return removeAllControls().addControls(controls);
-    }
-
-    /**
      * {@inheritDoc}
      *
      * @see     InteractiveResource#getThis()
@@ -331,30 +202,32 @@ public class InteractiveScene
     }
 
     /**
-     * Iterates through a <code>Collection</code> of <code>InteractiveScenes</code>. If <code>this</code> is found to be
-     * in the <code>Collection</code> then <code>this</code> has it's values updated.
+     * Iterates through a <code>Collection</code> of Objects. If <code>this</code> is found to be in the
+     * <code>Collection</code> then <code>this</code> has it's values updated.
      *
      * @param   objects
-     *          A <code>Collection</code> of <code>InteractiveScenes</code>
+     *          A <code>Collection</code> of Objects
      *
-     * @return  <code>this</code> for method chaining
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          provided <code>Collection</code> contains <code>this</code>
      *
      * @see     InteractiveResource#syncIfEqual(Collection)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public InteractiveScene syncIfEqual(Collection<? extends InteractiveScene> objects) {
+    public boolean syncIfEqual(Collection<?> objects) {
         if (objects != null) {
-            for (InteractiveScene object : objects) {
-                if (this.equals(object)) {
-                    this.meta = object.meta;
+            for (Object o : objects) {
+                if (this.equals(o)) {
+                    this.meta = ((InteractiveScene) o).meta;
                     this.controls.clear();
-                    this.controls.addAll(object.getControls());
+                    this.controls.addAll(((InteractiveScene) o).getControls());
+                    return true;
                 }
             }
         }
-        return getThis();
+        return false;
     }
 
     /**
@@ -363,42 +236,21 @@ public class InteractiveScene
      * @param   gameClient
      *          The <code>GameClient</code> to use for the create operation
      *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#CREATE_SCENES create} method call completes with no errors
      *
      * @see     IInteractiveCreatable#create(GameClient)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public InteractiveScene create(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null) {
-            syncIfEqual(gameClient.using(SCENE_SERVICE_PROVIDER).createScenes(this));
+    public CompletableFuture<Boolean> create(GameClient gameClient) {
+        if (gameClient == null) {
+            return CompletableFuture.completedFuture(false);
         }
-        return getThis();
-    }
 
-    /**
-     * Asynchronously creates <code>this</code> on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the create operation
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
-     *
-     * @see     IInteractiveCreatable#createAsync(GameClient)
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public ListenableFuture<InteractiveScene> createAsync(GameClient gameClient) {
-        return (gameClient != null)
-                ? Futures.transform(gameClient.using(SCENE_SERVICE_PROVIDER).createScenesAsync(this), (AsyncFunction<Set<InteractiveScene>, InteractiveScene>) createdScenes -> Futures.immediateFuture(syncIfEqual(createdScenes)))
-                : Futures.immediateFuture(getThis());
+        return gameClient.using(SCENE_SERVICE_PROVIDER).create(this)
+                .thenCompose(scenes -> CompletableFuture.supplyAsync(() -> syncIfEqual(scenes)));
     }
 
     /**
@@ -407,42 +259,21 @@ public class InteractiveScene
      * @param   gameClient
      *          The <code>GameClient</code> to use for the update operation
      *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#UPDATE_SCENES update} method call completes with no errors
      *
      * @see     IInteractiveUpdatable#update(GameClient)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public InteractiveScene update(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null) {
-            syncIfEqual(gameClient.using(SCENE_SERVICE_PROVIDER).updateScenes(this));
+    public CompletableFuture<Boolean> update(GameClient gameClient) {
+        if (gameClient == null) {
+            return CompletableFuture.completedFuture(false);
         }
-        return getThis();
-    }
 
-    /**
-     * Asynchronously updates <code>this</code> on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the update operation
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
-     *
-     * @see     IInteractiveUpdatable#updateAsync(GameClient)
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public ListenableFuture<InteractiveScene> updateAsync(GameClient gameClient) {
-        return (gameClient != null)
-                ? Futures.transform(gameClient.using(SCENE_SERVICE_PROVIDER).updateScenesAsync(this), (AsyncFunction<Set<InteractiveScene>, InteractiveScene>) updatedScenes -> Futures.immediateFuture(syncIfEqual(updatedScenes)))
-                : Futures.immediateFuture(getThis());
+        return gameClient.using(SCENE_SERVICE_PROVIDER).update(this)
+                .thenCompose(scenes -> CompletableFuture.supplyAsync(() -> syncIfEqual(scenes)));
     }
 
     /**
@@ -451,18 +282,16 @@ public class InteractiveScene
      * @param   gameClient
      *          The <code>GameClient</code> to use for the delete operation
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#DELETE_SCENE deleteScene} method call completes with no errors
      *
      * @see     IInteractiveDeletable#delete(GameClient)
      *
      * @since   1.0.0
      */
     @Override
-    public void delete(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        delete(gameClient, DEFAULT_SCENE);
+    public CompletableFuture<Boolean> delete(GameClient gameClient) {
+        return delete(gameClient, DEFAULT_SCENE);
     }
 
     /**
@@ -474,57 +303,15 @@ public class InteractiveScene
      *          Identifier for the <code>InteractiveScene</code> that <code>InteractiveGroups</code> will be
      *          reassigned to
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    public void delete(GameClient gameClient, String reassignSceneID) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null) {
-            gameClient.using(SCENE_SERVICE_PROVIDER).deleteScene(sceneID, reassignSceneID);
-        }
-    }
-
-    /**
-     * Asynchronously deletes <code>this</code> from the Interactive service, reassigning groups on this scene to
-     * the default scene.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_SCENE deleteScene} method call completes with no errors
-     *
-     * @see     IInteractiveDeletable#deleteAsync(GameClient)
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public ListenableFuture<Boolean> deleteAsync(GameClient gameClient) {
-        return deleteAsync(gameClient, DEFAULT_SCENE);
-    }
-
-    /**
-     * Asynchronously deletes <code>this</code> from the Interactive service, reassigning groups on this scene to
-     * the specified scene.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     * @param   reassignSceneID
-     *          Identifier for the <code>InteractiveScene</code> that <code>InteractiveGroups</code> will be
-     *          reassigned to
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
      *          {@link InteractiveMethod#DELETE_SCENE deleteScene} method call completes with no errors
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Boolean> deleteAsync(GameClient gameClient, String reassignSceneID) {
+    public CompletableFuture<Boolean> delete(GameClient gameClient, String reassignSceneID) {
         return gameClient != null
-                ? gameClient.using(SCENE_SERVICE_PROVIDER).deleteSceneAsync(sceneID, reassignSceneID)
-                : Futures.immediateFuture(false);
+                ? gameClient.using(SCENE_SERVICE_PROVIDER).delete(sceneID, reassignSceneID)
+                : CompletableFuture.completedFuture(false);
     }
 
     /**

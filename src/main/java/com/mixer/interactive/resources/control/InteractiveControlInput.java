@@ -1,6 +1,5 @@
 package com.mixer.interactive.resources.control;
 
-import com.google.common.base.Objects;
 import com.google.gson.JsonElement;
 
 import java.util.HashMap;

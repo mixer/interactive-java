@@ -1,6 +1,5 @@
 package com.mixer.interactive.resources.control;
 
-import com.google.common.base.Objects;
 import com.mixer.interactive.resources.InteractiveResource;
 
 import java.time.Duration;
@@ -27,6 +26,11 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
     private String text;
 
     /**
+     * The tooltip text displayed when the participant hovers over the button
+     */
+    private String tooltip;
+
+    /**
      * The cost in sparks involved in pressing a button
      */
     private Integer cost;
@@ -51,7 +55,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      * @since   1.0.0
      */
     public ButtonControl(String controlID) {
-        this(controlID, null, new InteractiveControlPosition[0]);
+        this(controlID, null);
     }
 
     /**
@@ -66,7 +70,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      *
      * @since   1.0.0
      */
-    public ButtonControl(String controlID, String sceneID, InteractiveControlPosition... position) {
+    public ButtonControl(String controlID, String sceneID, InteractiveControlPosition ... position) {
         super(controlID, sceneID, InteractiveControlType.BUTTON, position);
     }
 
@@ -93,7 +97,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      */
     public ButtonControl setKeycode(Integer keycode) {
         this.keycode = keycode;
-        return getThis();
+        return this;
     }
 
     /**
@@ -119,7 +123,33 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      */
     public ButtonControl setText(String text) {
         this.text = text;
-        return getThis();
+        return this;
+    }
+
+    /**
+     * Returns the tooltip text displayed when the participant hovers over the button.
+     *
+     * @return  The tooltip text displayed when the participant hovers over the button
+     *
+     * @since   2.0.0
+     */
+    public String getTooltip() {
+        return tooltip;
+    }
+
+    /**
+     * Sets the tooltip text to be displayed when the participant hovers over the <code>ButtonControl</code>.
+     *
+     * @param   tooltip
+     *          The tooltip text displayed when the participant hovers over the button
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   2.0.0
+     */
+    public ButtonControl setTooltip(String tooltip) {
+        this.tooltip = tooltip;
+        return this;
     }
 
     /**
@@ -145,7 +175,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      */
     public ButtonControl setCost(Integer cost) {
         this.cost = cost;
-        return getThis();
+        return this;
     }
 
     /**
@@ -171,7 +201,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      */
     public ButtonControl setProgress(Float progress) {
         this.progress = progress;
-        return getThis();
+        return this;
     }
 
     /**
@@ -200,7 +230,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      */
     public ButtonControl setCooldown(Number cooldown) {
         this.cooldown = cooldown.longValue();
-        return getThis();
+        return this;
     }
 
     /**
@@ -216,7 +246,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      */
     public ButtonControl setCooldown(Instant cooldown) {
         this.cooldown = cooldown.toEpochMilli();
-        return getThis();
+        return this;
     }
 
     /**
@@ -246,33 +276,35 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
     }
 
     /**
-     * Iterates through a <code>Collection</code> of <code>ButtonControls</code>. If <code>this</code> is found to be
-     * in the <code>Collection</code> then <code>this</code> has it's values updated.
+     * Iterates through a <code>Collection</code> of Objects. If <code>this</code> is found to be in the
+     * <code>Collection</code> then <code>this</code> has it's values updated.
      *
      * @param   objects
-     *          A <code>Collection</code> of <code>ButtonControls</code>
+     *          A <code>Collection</code> of Objects
      *
-     * @return  <code>this</code> for method chaining
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          provided <code>Collection</code> contains <code>this</code>
      *
      * @see     InteractiveResource#syncIfEqual(Collection)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public ButtonControl syncIfEqual(Collection<? extends ButtonControl> objects) {
+    public boolean syncIfEqual(Collection<?> objects) {
         if (objects != null) {
-            for (ButtonControl object : objects) {
-                if (this.equals(object)) {
-                    this.meta = object.meta;
-                    this.setDisabled(object.isDisabled());
-                    this.keycode = object.keycode;
-                    this.text = object.text;
-                    this.cost = object.cost;
-                    this.progress = object.progress;
-                    this.cooldown = object.cooldown;
+            for (Object o : objects) {
+                if (o instanceof ButtonControl && this.equals(o)) {
+                    this.meta = ((ButtonControl) o).meta;
+                    this.setDisabled(((ButtonControl) o).isDisabled());
+                    this.keycode = ((ButtonControl) o).keycode;
+                    this.text = ((ButtonControl) o).text;
+                    this.cost = ((ButtonControl) o).cost;
+                    this.progress = ((ButtonControl) o).progress;
+                    this.cooldown = ((ButtonControl) o).cooldown;
+                    return true;
                 }
             }
         }
-        return getThis();
+        return false;
     }
 }

@@ -1,9 +1,8 @@
 package com.mixer.interactive.resources;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import com.mixer.interactive.GameClient;
-import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
-import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * The interface <code>IInteractiveCreatable</code> defines methods for creating a resource on the Interactive service.
@@ -12,24 +11,7 @@ import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
  *
  * @since       1.0.0
  */
-public interface IInteractiveCreatable<T> {
-
-    /**
-     * Creates <code>this</code> on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the create operation
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @since   1.0.0
-     */
-    T create(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException;
+public interface IInteractiveCreatable {
 
     /**
      * Asynchronously creates <code>this</code> on the Interactive service.
@@ -37,9 +19,10 @@ public interface IInteractiveCreatable<T> {
      * @param   gameClient
      *          The <code>GameClient</code> to use for the create operation
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          create request completes with no errors
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
-    ListenableFuture<T> createAsync(GameClient gameClient);
+    CompletableFuture<Boolean> create(GameClient gameClient);
 }

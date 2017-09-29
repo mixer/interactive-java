@@ -1,15 +1,9 @@
 package com.mixer.interactive.resources.group;
 
-import com.google.common.base.Objects;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hashing;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
-import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
-import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
 import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.resources.IInteractiveCreatable;
 import com.mixer.interactive.resources.IInteractiveDeletable;
@@ -21,7 +15,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+import static com.mixer.interactive.GameClient.GROUP_SERVICE_PROVIDER;
 
 /**
  * A <code>InteractiveGroup</code> represents a group on the Interactive service.
@@ -32,7 +28,7 @@ import java.util.Set;
  */
 public class InteractiveGroup
         extends InteractiveResource<InteractiveGroup>
-        implements IInteractiveCreatable<InteractiveGroup>, IInteractiveDeletable, Comparable<InteractiveGroup> {
+        implements IInteractiveCreatable, IInteractiveDeletable, Comparable<InteractiveGroup> {
 
     /**
      * Logger.
@@ -144,7 +140,7 @@ public class InteractiveGroup
             this.sceneID = DEFAULT_GROUP;
         }
 
-        return getThis();
+        return this;
     }
 
     /**
@@ -174,29 +170,31 @@ public class InteractiveGroup
     }
 
     /**
-     * Iterates through a <code>Collection</code> of <code>InteractiveGroups</code>. If <code>this</code> is found to be
-     * in the <code>Collection</code> then <code>this</code> has it's values updated.
+     * Iterates through a <code>Collection</code> of Objects. If <code>this</code> is found to be in the
+     * <code>Collection</code> then <code>this</code> has it's values updated.
      *
      * @param   objects
-     *          A <code>Collection</code> of <code>InteractiveGroups</code>
+     *          A <code>Collection</code> of Objects
      *
-     * @return  <code>this</code> for method chaining
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          provided <code>Collection</code> contains <code>this</code>
      *
      * @see     InteractiveResource#syncIfEqual(Collection)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public InteractiveGroup syncIfEqual(Collection<? extends InteractiveGroup> objects) {
+    public boolean syncIfEqual(Collection<?> objects) {
         if (objects != null) {
-            for (InteractiveGroup object : objects) {
-                if (this.equals(object)) {
-                    this.meta = object.meta;
-                    this.sceneID = object.sceneID;
+            for (Object o : objects) {
+                if (this.equals(o)) {
+                    this.meta = ((InteractiveGroup) o).meta;
+                    this.sceneID = ((InteractiveGroup) o).sceneID;
+                    return true;
                 }
             }
         }
-        return getThis();
+        return false;
     }
 
     /**
@@ -205,44 +203,20 @@ public class InteractiveGroup
      * @param   gameClient
      *          The <code>GameClient</code> to use for the create operation
      *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#CREATE_GROUPS create} method call completes with no errors
      *
      * @see     IInteractiveCreatable#create(GameClient)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public InteractiveGroup create(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null) {
-            gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).createGroups(this);
-        }
-        return getThis();
-    }
-
-    /**
-     * Asynchronously creates <code>this</code> on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the create operation
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
-     *
-     * @see     IInteractiveCreatable#createAsync(GameClient)
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public ListenableFuture<InteractiveGroup> createAsync(GameClient gameClient) {
+    public CompletableFuture<Boolean> create(GameClient gameClient) {
         if (gameClient == null) {
-            return Futures.immediateFuture(getThis());
+            return CompletableFuture.completedFuture(false);
         }
-        return Futures.transform(gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).createGroupsAsync(this),
-                (AsyncFunction<Boolean, InteractiveGroup>) input -> Futures.immediateFuture(getThis()));
+
+        return gameClient.using(GROUP_SERVICE_PROVIDER).create(this);
     }
 
     /**
@@ -251,71 +225,43 @@ public class InteractiveGroup
      * @param   gameClient
      *          The <code>GameClient</code> to use for the update operation
      *
-     * @return  <code>this</code> for method chaining
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#UPDATE_GROUPS update} method call completes with no errors
      *
      * @see     IInteractiveUpdatable#update(GameClient)
      *
-     * @since   1.0.0
+     * @since   2.0.0
      */
     @Override
-    public InteractiveGroup update(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null) {
-            syncIfEqual(gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).updateGroups(this));
-        }
-        return getThis();
-    }
-
-    /**
-     * Asynchronously updates <code>this</code> on the Interactive service.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the update operation
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns <code>this</code> for method chaining
-     *
-     * @see     IInteractiveUpdatable#updateAsync(GameClient)
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public ListenableFuture<InteractiveGroup> updateAsync(GameClient gameClient) {
+    public CompletableFuture<Boolean> update(GameClient gameClient) {
         if (gameClient == null) {
-            return Futures.immediateFuture(getThis());
+            return CompletableFuture.completedFuture(false);
         }
-        return  Futures.transform(gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).updateGroupsAsync(this),
-                (AsyncFunction<Set<InteractiveGroup>, InteractiveGroup>) updatedGroups ->
-                        Futures.immediateFuture(syncIfEqual(updatedGroups)));
+
+        return gameClient.using(GROUP_SERVICE_PROVIDER).update(this)
+                .thenCompose(groups -> CompletableFuture.supplyAsync(() -> syncIfEqual(groups)));
     }
 
     /**
-     * Deletes <code>this</code> from the Interactive service, reassigning participants of this group to
-     * the default group.
+     * Deletes <code>this</code> from the Interactive service, reassigning participants of this group to the default group.
      *
      * @param   gameClient
      *          The <code>GameClient</code> to use for the delete operation
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#DELETE_GROUP delete} method call completes with no errors
      *
      * @see     IInteractiveDeletable#delete(GameClient)
      *
      * @since   1.0.0
      */
     @Override
-    public void delete(GameClient gameClient) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        delete(gameClient, DEFAULT_GROUP);
+    public CompletableFuture<Boolean> delete(GameClient gameClient) {
+        return delete(gameClient, DEFAULT_GROUP);
     }
 
     /**
-     * Deletes <code>this</code> from the Interactive service, reassigning participants of this group to
-     * the specified group.
+     * Deletes <code>this</code> from the Interactive service, reassigning participants of this group to the specified group.
      *
      * @param   gameClient
      *          The <code>GameClient</code> to use for the delete operation
@@ -323,57 +269,15 @@ public class InteractiveGroup
      *          The identifier for the <code>InteractiveGroup</code> that <code>InteractiveParticipants</code> will be
      *          reassigned to
      *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
+     *          {@link InteractiveMethod#DELETE_GROUP delete} method call completes with no errors
      *
      * @since   1.0.0
      */
-    public void delete(GameClient gameClient, String reassignGroupID) throws InteractiveRequestNoReplyException, InteractiveReplyWithErrorException {
-        if (gameClient != null) {
-            gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).deleteGroup(groupID, reassignGroupID);
-        }
-    }
-
-    /**
-     * Asynchronously deletes <code>this</code> from the Interactive service, reassigning participants of this group to
-     * the default group.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_GROUP deleteGroup} method call completes with no errors
-     *
-     * @see     IInteractiveDeletable#deleteAsync(GameClient)
-     *
-     * @since   1.0.0
-     */
-    @Override
-    public ListenableFuture<Boolean> deleteAsync(GameClient gameClient) {
-        return deleteAsync(gameClient, DEFAULT_GROUP);
-    }
-
-    /**
-     * Asynchronously deletes <code>this</code> from the Interactive service, reassigning participants of this group to
-     * the specified group.
-     *
-     * @param   gameClient
-     *          The <code>GameClient</code> to use for the delete operation
-     * @param   reassignGroupID
-     *          The identifier for the <code>InteractiveGroup</code> that <code>InteractiveParticipants</code> will be
-     *          reassigned to
-     *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} if the
-     *          {@link InteractiveMethod#DELETE_GROUP deleteGroup} method call completes with no errors
-     *
-     * @since   1.0.0
-     */
-    public ListenableFuture<Boolean> deleteAsync(GameClient gameClient, String reassignGroupID) {
+    public CompletableFuture<Boolean> delete(GameClient gameClient, String reassignGroupID) {
         return (gameClient != null)
-                ? gameClient.using(GameClient.GROUP_SERVICE_PROVIDER).deleteGroupAsync(groupID, reassignGroupID)
-                : Futures.immediateFuture(false);
+                ? gameClient.using(GROUP_SERVICE_PROVIDER).delete(groupID, reassignGroupID)
+                : CompletableFuture.completedFuture(false);
     }
 
     /**

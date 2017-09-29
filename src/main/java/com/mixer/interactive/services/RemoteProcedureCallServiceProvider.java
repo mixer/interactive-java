@@ -1,9 +1,5 @@
 package com.mixer.interactive.services;
 
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -16,11 +12,11 @@ import com.mixer.interactive.protocol.ReplyPacket;
 import com.mixer.interactive.ws.InteractiveWebSocketClient;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,12 +38,12 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
     /**
      * The default time unit for timing out unfulfilled method requests.
      */
-    private static final TimeUnit DEFAULT_TIMEOUT_TIME_UNIT = TimeUnit.SECONDS;
+    private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.SECONDS;
 
     /**
      * The default duration for timing out unfulfilled method requests.
      */
-    private static final long DEFAULT_TIMEOUT_DURATION = 15;
+    private static final long DEFAULT_DURATION = 15;
 
     /**
      * Initializes a new <code>RemoteProcedureCallServiceProvider</code>.
@@ -59,90 +55,6 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      */
     public RemoteProcedureCallServiceProvider(GameClient gameClient) {
         super(gameClient);
-    }
-
-    /**
-     * Prepares and sends a request to the Interactive service.
-     *
-     * @param   method
-     *          An <code>InteractiveMethod</code> for the request
-     * @param   params
-     *          Json encoded map of parameters for the request
-     *
-     * @return <code>true</code> if the request was successful (no errors were returned), <code>false</code> otherwise
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     MethodPacket
-     *
-     * @since   1.0.0
-     */
-    public boolean makeRequest(InteractiveMethod method, JsonElement params) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return !(send(new MethodPacket(claimNextPacketId(), method, params))).hasError();
-    }
-
-    /**
-     * Prepares and sends a request to the Interactive service, returning the parsed reply.
-     *
-     * @param   method
-     *          An <code>InteractiveMethod</code> for the request
-     * @param   params
-     *          Json encoded map of parameters for the request
-     * @param   type
-     *          Type of object to be parsed from reply
-     * @param   <T>
-     *          Class of object to be parsed from the reply
-     *
-     * @return  A <code>T</code> object parsed from the <code>ReplyPacket</code> sent back from the Interactive service for
-     *          this request
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     MethodPacket
-     *
-     * @since   1.0.0
-     */
-    public <T> T makeRequest(InteractiveMethod method, JsonElement params, Type type) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return send(new MethodPacket(claimNextPacketId(), method, params)).getResultAs(type);
-    }
-
-    /**
-     * Prepares and sends a request to the Interactive service, returning the parsed reply.
-     *
-     * @param   method
-     *          An <code>InteractiveMethod</code> for the request
-     * @param   params
-     *          Json encoded map of parameters for the request
-     * @param   memberName
-     *          Member name of parameter to be parsed from reply
-     * @param   type
-     *          Type of object to be parsed from reply
-     * @param   <T>
-     *          Class of object to be parsed from the reply
-     *
-     * @return  A <code>T</code> object parsed from the <code>ReplyPacket</code> sent back from the Interactive service for this
-     *          request if it completes with no errors
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     MethodPacket
-     *
-     * @since   1.0.0
-     */
-    public <T> T makeRequest(InteractiveMethod method, JsonElement params, String memberName, Type type) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        ReplyPacket replyPacket = send(new MethodPacket(claimNextPacketId(), method, params));
-        return replyPacket.getResult().isJsonObject()
-                ? GameClient.GSON.fromJson(((JsonObject) replyPacket.getResult()).get(memberName),type)
-                : null;
     }
 
     /**
@@ -158,13 +70,13 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      * @since   1.0.0
      */
     public void makeRequestNoReply(InteractiveMethod method, JsonElement params) {
-        sendAsync(new MethodPacket(claimNextPacketId(), method, params, true));
+        send(new MethodPacket(claimNextPacketId(), method, params, true));
     }
 
     /**
      * <p>Prepares and sends a request to the Interactive service.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -176,39 +88,42 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   method
      *          An <code>InteractiveMethod</code> for the request
      * @param   params
      *          Json encoded map of parameters for the request
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns {@link Boolean#TRUE true} for this request
+     * @return  A <code>CompletableFuture</code> that when complete returns {@link Boolean#TRUE true} for this request
      *          if it completes with no errors
      *
      * @see     MethodPacket
      *
      * @since   1.0.0
      */
-    public ListenableFuture<Boolean> makeRequestAsync(InteractiveMethod method, JsonElement params) {
+    public CompletableFuture<Boolean> makeRequest(InteractiveMethod method, JsonElement params) {
         MethodPacket requestPacket = new MethodPacket(claimNextPacketId(), method, params);
 
-        return Futures.transform(sendAsync(requestPacket), (AsyncFunction<ReplyPacket, Boolean>) replyPacket -> {
+        return send(requestPacket).thenCompose(replyPacket -> {
+            CompletableFuture<Boolean> composedFuture = new CompletableFuture<>();
             if (replyPacket == null) {
-                throw new InteractiveRequestNoReplyException(requestPacket);
+                composedFuture.completeExceptionally(new InteractiveRequestNoReplyException(requestPacket));
             }
-            if (replyPacket.hasError()) {
-                throw new InteractiveReplyWithErrorException(requestPacket, replyPacket.getError());
+            else if (replyPacket.hasError()) {
+                composedFuture.completeExceptionally(new InteractiveReplyWithErrorException(requestPacket, replyPacket.getError()));
             }
-
-            return Futures.immediateFuture(true);
+            else {
+                composedFuture.complete(true);
+            }
+            return composedFuture;
         });
     }
 
     /**
      * <p>Prepares and sends a request to the Interactive service, returning the parsed reply.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -220,7 +135,7 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   method
      *          An <code>InteractiveMethod</code> for the request
@@ -231,7 +146,7 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      * @param   <T>
      *          Class of object to be parsed from the reply
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>T</code> object parsed from the
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>T</code> object parsed from the
      *          <code>ReplyPacket</code> sent back from the Interactive service for this request if it completes with
      *          no errors
      *
@@ -239,24 +154,14 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      *
      * @since   1.0.0
      */
-    public <T> ListenableFuture<T> makeRequestAsync(InteractiveMethod method, JsonElement params, Type type) {
-        MethodPacket requestPacket = new MethodPacket(claimNextPacketId(), method, params);
-        return Futures.transform(sendAsync(requestPacket), (AsyncFunction<ReplyPacket, T>) replyPacket -> {
-            if (replyPacket == null) {
-                throw new InteractiveRequestNoReplyException(requestPacket);
-            }
-            if (replyPacket.hasError()) {
-                throw new InteractiveReplyWithErrorException(requestPacket, replyPacket.getError());
-            }
-
-            return Futures.immediateFuture(replyPacket.getResultAs(type));
-        });
+    public <T> CompletableFuture<T> makeRequest(InteractiveMethod method, JsonElement params, Type type) {
+        return makeRequest(method, params, null, type);
     }
 
     /**
      * <p>Prepares and sends a request to the Interactive service, returning the parsed reply.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -268,7 +173,7 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   method
      *          An <code>InteractiveMethod</code> for the request
@@ -281,7 +186,7 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      * @param   <T>
      *          Class of object to be parsed from the reply
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns a <code>T</code> object parsed from the
+     * @return  A <code>CompletableFuture</code> that when complete returns a <code>T</code> object parsed from the
      *          <code>ReplyPacket</code> sent back from the Interactive service for this request if it completes with
      *          no errors
      *
@@ -289,107 +194,54 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      *
      * @since   1.0.0
      */
-    public <T> ListenableFuture<T> makeRequestAsync(InteractiveMethod method, JsonElement params, String memberName, Type type) {
+    public <T> CompletableFuture<T> makeRequest(InteractiveMethod method, JsonElement params, String memberName, Type type) {
         MethodPacket requestPacket = new MethodPacket(claimNextPacketId(), method, params);
-        return Futures.transform(sendAsync(requestPacket), (AsyncFunction<ReplyPacket, T>) replyPacket -> {
-            if (replyPacket == null) {
-                throw new InteractiveRequestNoReplyException(requestPacket);
-            }
-            if (replyPacket.hasError()) {
-                throw new InteractiveReplyWithErrorException(requestPacket, replyPacket.getError());
-            }
 
-            return replyPacket.getResult().isJsonObject()
-                    ? Futures.immediateFuture(GameClient.GSON.fromJson(((JsonObject) replyPacket.getResult()).get(memberName), type))
-                    : Futures.immediateFuture(null);
+        return send(requestPacket).thenCompose(replyPacket -> {
+            CompletableFuture<T> composedFuture = new CompletableFuture<>();
+            if (replyPacket == null) {
+                composedFuture.completeExceptionally(new InteractiveRequestNoReplyException(requestPacket));
+            }
+            else if (replyPacket.hasError()) {
+                composedFuture.completeExceptionally(new InteractiveReplyWithErrorException(requestPacket, replyPacket.getError()));
+            }
+            else if (replyPacket.getResult().isJsonObject()) {
+                if (memberName == null) {
+                    composedFuture.complete(replyPacket.getResultAs(type));
+                }
+                else {
+                    composedFuture.complete(GameClient.GSON.fromJson(((JsonObject) replyPacket.getResult()).get(memberName), type));
+                }
+            }
+            else {
+                composedFuture.complete(null);
+            }
+            return composedFuture;
         });
     }
 
     /**
-     * Sends a request to the Interactive service, returning the reply.
-     *
-     * @param   requestPacket
-     *          A <code>MethodPacket</code> representing the request being sent
-     *
-     * @return  The <code>ReplyPacket</code> sent back from the Interactive service for the provided method request
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     MethodPacket
-     *
-     * @since   1.0.0
-     */
-    public ReplyPacket send(MethodPacket requestPacket) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-        return send(requestPacket, DEFAULT_TIMEOUT_TIME_UNIT, DEFAULT_TIMEOUT_DURATION);
-    }
-
-    /**
-     * Sends a request to the Interactive service, returning the reply. If a reply is not received within the specified
-     * timeout duration, throws an <code>InteractiveRequestNoReplyException</code> exception.
-     *
-     * @param   requestPacket
-     *          A <code>MethodPacket</code> representing the request being sent
-     * @param   timeoutUnit
-     *          A <code>TimeUnit</code> indicating the units to be used in the timeout
-     * @param   timeoutDuration
-     *          Duration before request is considered timed out (no reply)
-     *
-     * @return  The <code>ReplyPacket</code> sent back from the Interactive service for the provided method request
-     *
-     * @throws  InteractiveReplyWithErrorException
-     *          If the reply received from the Interactive service contains an <code>InteractiveError</code>
-     * @throws  InteractiveRequestNoReplyException
-     *          If no reply is received from the Interactive service
-     *
-     * @see     MethodPacket
-     *
-     * @since   1.0.0
-     */
-    public ReplyPacket send(MethodPacket requestPacket, TimeUnit timeoutUnit, long timeoutDuration) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
-
-        ReplyPacket replyPacket = null;
-        try {
-            replyPacket = sendAsync(requestPacket, timeoutUnit, timeoutDuration).get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            // NO-OP
-        }
-
-        if (replyPacket == null) {
-            throw new InteractiveRequestNoReplyException(requestPacket);
-        }
-        if (replyPacket.hasError()) {
-            throw new InteractiveReplyWithErrorException(requestPacket, replyPacket.getError());
-        }
-
-        return replyPacket;
-    }
-
-    /**
      * Sends a request to the Interactive service, returning the reply. If a reply is not received within the specified
      * timeout duration, throws an <code>InteractiveRequestNoReplyException</code> exception.
      *
      * @param   requestPacket
      *          A <code>MethodPacket</code> representing the request being sent
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns the <code>ReplyPacket</code> sent back from
+     * @return  A <code>CompletableFuture</code> that when complete returns the <code>ReplyPacket</code> sent back from
      *          the Interactive service for the provided method request
      *
      * @see     MethodPacket
      *
      * @since   1.0.0
      */
-    public ListenableFuture<ReplyPacket> sendAsync(MethodPacket requestPacket) {
-        return sendAsync(requestPacket, DEFAULT_TIMEOUT_TIME_UNIT, DEFAULT_TIMEOUT_DURATION);
+    public CompletableFuture<ReplyPacket> send(MethodPacket requestPacket) {
+        return send(requestPacket, DEFAULT_DURATION, DEFAULT_TIME_UNIT);
     }
 
     /**
      * <p>Prepares and sends a request to the Interactive service, returning the parsed reply.</p>
      *
-     * <p>The result of the <code>ListenableFuture</code> may include checked exceptions that were thrown in the event
+     * <p>The result of the <code>CompletableFuture</code> may include checked exceptions that were thrown in the event
      * that there was a problem with the reply from the Interactive service. Specifically, two types of checked
      * exceptions may be thrown:</p>
      *
@@ -401,29 +253,32 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      * </ul>
      *
      * <p>Considerations should be made for these possibilities when interpreting the results of the returned
-     * <code>ListenableFuture</code>.</p>
+     * <code>CompletableFuture</code>.</p>
      *
      * @param   requestPacket
      *          A <code>MethodPacket</code> representing the request being sent
-     * @param   timeoutUnit
-     *          A <code>TimeUnit</code> indicating the units to be used in the timeout
-     * @param   timeoutDuration
+     * @param   duration
      *          Duration before request is considered timed out (no reply)
+     * @param   timeUnit
+     *          A <code>TimeUnit</code> indicating the units to be used in the timeout
      *
-     * @return  A <code>ListenableFuture</code> that when complete returns the <code>ReplyPacket</code> sent back from
+     * @return  A <code>CompletableFuture</code> that when complete returns the <code>ReplyPacket</code> sent back from
      *          the Interactive service for the provided method request
      *
      * @see     MethodPacket
      *
      * @since   1.0.0
      */
-    public ListenableFuture<ReplyPacket> sendAsync(MethodPacket requestPacket, TimeUnit timeoutUnit, long timeoutDuration) {
+    public CompletableFuture<ReplyPacket> send(MethodPacket requestPacket, long duration, TimeUnit timeUnit) {
 
-        List<ListenableFuture<ReplyPacket>> requestPromises = sendMultipleAsync(Collections.singletonList(requestPacket), timeoutUnit, timeoutDuration);
-        if (requestPromises.size() == 1) {
-            return requestPromises.get(0);
+        Map<MethodPacket, CompletableFuture<ReplyPacket>> requestPromiseMap = send(Collections.singletonList(requestPacket), duration, timeUnit);
+        if (requestPromiseMap.containsKey(requestPacket)) {
+            return requestPromiseMap.get(requestPacket);
         }
-        return Futures.immediateFailedFuture(new InteractiveRequestNoReplyException(requestPacket));
+
+        CompletableFuture<ReplyPacket> failedFuture = new CompletableFuture<>();
+        failedFuture.completeExceptionally(new InteractiveRequestNoReplyException(requestPacket));
+        return failedFuture;
     }
 
     /**
@@ -445,14 +300,14 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      * @param   requestPackets
      *          A <code>Collection</code> of <code>MethodPacket</code> representing the requests being sent
      *
-     * @return  A <code>List</code> of <code>ListenableFutures</code> that when complete return the
+     * @return  A <code>List</code> of <code>CompletableFutures</code> that when complete return the
      *          <code>ReplyPacket</code> for the corresponding input <code>MethodPacket</code>. This list is in the same
      *          order as the input collection.
      *
      * @since   1.0.0
      */
-    public List<ListenableFuture<ReplyPacket>> sendMultipleAsync(Collection<MethodPacket> requestPackets) {
-        return sendMultipleAsync(requestPackets, DEFAULT_TIMEOUT_TIME_UNIT, DEFAULT_TIMEOUT_DURATION);
+    public Map<MethodPacket, CompletableFuture<ReplyPacket>> send(Collection<MethodPacket> requestPackets) {
+        return send(requestPackets, DEFAULT_DURATION, DEFAULT_TIME_UNIT);
     }
 
     /**
@@ -473,31 +328,32 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      *
      * @param   requestPackets
      *          A <code>Collection</code> of <code>MethodPacket</code> representing the requests being sent
-     * @param   timeoutUnit
-     *          A <code>TimeUnit</code> indicating the units to be used in the timeout
-     * @param   timeoutDuration
+     * @param   duration
      *          Duration before request is considered timed out (no reply)
+     * @param   timeUnit
+     *          A <code>TimeUnit</code> indicating the units to be used in the timeout
      *
-     * @return  A <code>List</code> of <code>ListenableFutures</code> that when complete return the
+     * @return  A <code>List</code> of <code>CompletableFutures</code> that when complete return the
      *          <code>ReplyPacket</code> for the corresponding input <code>MethodPacket</code>. This list is in the same
      *          order as the input collection.
      *
      * @since   1.0.0
      */
-    public List<ListenableFuture<ReplyPacket>> sendMultipleAsync(Collection<MethodPacket> requestPackets, TimeUnit timeoutUnit, long timeoutDuration) {
-
-        if (requestPackets == null || requestPackets.isEmpty() || timeoutUnit == null || timeoutDuration < 0) {
-            return Collections.emptyList();
+    public Map<MethodPacket, CompletableFuture<ReplyPacket>> send(Collection<MethodPacket> requestPackets, long duration, TimeUnit timeUnit) {
+        if (requestPackets == null || requestPackets.isEmpty() || timeUnit == null || duration < 0) {
+            return Collections.emptyMap();
         }
 
         InteractiveWebSocketClient webSocketClient = gameClient.getWebSocketClient();
-        List<ListenableFuture<ReplyPacket>> requestPromises = new ArrayList<>();
+        Map<MethodPacket, CompletableFuture<ReplyPacket>> requestPromiseMap = new HashMap<>();
         JsonArray requestArray = new JsonArray();
 
         for (MethodPacket requestPacket : requestPackets) {
-            // If there is no connection to the Interactive service, immediately fail the promise with an exception
+            requestPacket.setSequenceNumber(getSequenceNumber());
+            CompletableFuture<ReplyPacket> replyPromise = new CompletableFuture<>();
             if (webSocketClient == null) {
-                requestPromises.add(Futures.immediateFailedFuture(new InteractiveRequestNoReplyException(requestPacket)));
+                replyPromise.completeExceptionally(new InteractiveRequestNoReplyException(requestPacket));
+                requestPromiseMap.put(requestPacket, replyPromise);
                 continue;
             }
 
@@ -507,13 +363,14 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
             // If the request is to be discarded, do not track it. Otherwise, track it and add a listener to time it out
             // in the event a reply is not received within the specified time frame.
             if (requestPacket.getDiscard()) {
-                requestPromises.add(Futures.immediateFuture(null));
+                requestPromiseMap.put(requestPacket, CompletableFuture.completedFuture(null));
             }
             else {
-                SettableFuture<ReplyPacket> sendRequest = SettableFuture.create();
-                webSocketClient.getWaitingPromisesMap().put(requestPacket.getPacketID(), sendRequest);
-                gameClient.getExecutorService().schedule((Runnable) () -> sendRequest.setException(new InteractiveRequestNoReplyException(requestPacket)), timeoutDuration, timeoutUnit);
-                requestPromises.add(sendRequest);
+                webSocketClient.getWaitingFuturesMap().put(requestPacket.getPacketID(), replyPromise);
+                gameClient.getExecutorService().schedule(() ->
+                    replyPromise.completeExceptionally(new InteractiveRequestNoReplyException(requestPacket))
+                , duration, timeUnit);
+                requestPromiseMap.put(requestPacket, replyPromise);
             }
         }
 
@@ -527,7 +384,7 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
             }
         }
 
-        return requestPromises;
+        return requestPromiseMap;
     }
 
     /**
@@ -541,5 +398,18 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      */
     public int claimNextPacketId() {
         return (gameClient.getWebSocketClient() != null) ? gameClient.getWebSocketClient().claimNextPacketId() : 0;
+    }
+
+    /**
+     * Returns the last seen sequence number.
+     *
+     * @return  The last seen sequence number
+     *
+     * @see     InteractiveWebSocketClient#getLastSequenceNumber()
+     *
+     * @since   2.0.0
+     */
+    public int getSequenceNumber() {
+        return gameClient.getWebSocketClient().getLastSequenceNumber();
     }
 }
