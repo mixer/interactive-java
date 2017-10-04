@@ -11,8 +11,17 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.awt.*;
+import java.time.Instant;
+import java.time.temporal.TemporalAmount;
+import java.time.temporal.TemporalUnit;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.mixer.interactive.GameClient.CONTROL_SERVICE_PROVIDER;
 import static com.mixer.interactive.test.util.TestUtils.*;
@@ -46,9 +55,238 @@ public class ButtonControlIntegrationTest {
     }
 
     @Test
+    public void can_set_cost() {
+        try {
+            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+                    .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
+                    .thenCompose(interactiveControls -> {
+                        for (InteractiveControl interactiveControl : interactiveControls) {
+                            if (interactiveControl instanceof ButtonControl) {
+                                return CompletableFuture.completedFuture((ButtonControl) interactiveControl);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    })
+                    .get();
+
+            if (control == null) {
+                Assert.fail("No button control was found to test");
+            }
+
+            Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).update(control.setCost(90))
+                    .thenCompose(updatePromises -> {
+                        for (InteractiveControl key : updatePromises.keySet()) {
+                            if (key.getControlID().equals(control.getControlID())) {
+                                return updatePromises.get(key);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(Collections.emptySet());
+                    })
+                    .get();
+
+            Assert.assertEquals("The control was updated", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID())));
+            Assert.assertEquals("The control has the specified cost value", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID()) && Objects.equals(((ButtonControl) updatedControl).getCost(), control.getCost())));
+        }
+        catch (InterruptedException | ExecutionException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void can_set_keyCode() {
+        try {
+            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+                    .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
+                    .thenCompose(interactiveControls -> {
+                        for (InteractiveControl interactiveControl : interactiveControls) {
+                            if (interactiveControl instanceof ButtonControl) {
+                                return CompletableFuture.completedFuture((ButtonControl) interactiveControl);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    })
+                    .get();
+
+            if (control == null) {
+                Assert.fail("No button control was found to test");
+            }
+
+            Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).update(control.setKeyCode(90))
+                    .thenCompose(updatePromises -> {
+                        for (InteractiveControl key : updatePromises.keySet()) {
+                            if (key.getControlID().equals(control.getControlID())) {
+                                return updatePromises.get(key);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(Collections.emptySet());
+                    })
+                    .get();
+
+            Assert.assertEquals("The control was updated", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID())));
+            Assert.assertEquals("The control has the specified keyCode value", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID()) && Objects.equals(((ButtonControl) updatedControl).getKeyCode(), control.getKeyCode())));
+        }
+        catch (InterruptedException | ExecutionException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void can_set_tooltip() {
+        try {
+            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+                    .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
+                    .thenCompose(interactiveControls -> {
+                        for (InteractiveControl interactiveControl : interactiveControls) {
+                            if (interactiveControl instanceof ButtonControl) {
+                                return CompletableFuture.completedFuture((ButtonControl) interactiveControl);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    })
+                    .get();
+
+            if (control == null) {
+                Assert.fail("No button control was found to test");
+            }
+
+            Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).update(control.setTooltip("malm"))
+                    .thenCompose(updatePromises -> {
+                        for (InteractiveControl key : updatePromises.keySet()) {
+                            if (key.getControlID().equals(control.getControlID())) {
+                                return updatePromises.get(key);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(Collections.emptySet());
+                    })
+                    .get();
+
+            Assert.assertEquals("The control was updated", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID())));
+            Assert.assertEquals("The control has the specified tooltip value", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID()) && Objects.equals(((ButtonControl) updatedControl).getTooltip(), control.getTooltip())));
+        }
+        catch (InterruptedException | ExecutionException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void can_set_progress() {
+        try {
+            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+                    .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
+                    .thenCompose(interactiveControls -> {
+                        for (InteractiveControl interactiveControl : interactiveControls) {
+                            if (interactiveControl instanceof ButtonControl) {
+                                return CompletableFuture.completedFuture((ButtonControl) interactiveControl);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    })
+                    .get();
+
+            if (control == null) {
+                Assert.fail("No button control was found to test");
+            }
+
+            Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).update(control.setProgress(0.5F))
+                    .thenCompose(updatePromises -> {
+                        for (InteractiveControl key : updatePromises.keySet()) {
+                            if (key.getControlID().equals(control.getControlID())) {
+                                return updatePromises.get(key);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(Collections.emptySet());
+                    })
+                    .get();
+
+            Assert.assertEquals("The control was updated", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID())));
+            Assert.assertEquals("The control has the specified progress value", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID()) && Objects.equals(((ButtonControl) updatedControl).getProgress(), control.getProgress())));
+        }
+        catch (InterruptedException | ExecutionException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void can_set_text() {
+        try {
+            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+                    .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
+                    .thenCompose(interactiveControls -> {
+                        for (InteractiveControl interactiveControl : interactiveControls) {
+                            if (interactiveControl instanceof ButtonControl) {
+                                return CompletableFuture.completedFuture((ButtonControl) interactiveControl);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    })
+                    .get();
+
+            if (control == null) {
+                Assert.fail("No button control was found to test");
+            }
+
+            Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).update(control.setText("mappa"))
+                    .thenCompose(updatePromises -> {
+                        for (InteractiveControl key : updatePromises.keySet()) {
+                            if (key.getControlID().equals(control.getControlID())) {
+                                return updatePromises.get(key);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(Collections.emptySet());
+                    })
+                    .get();
+
+            Assert.assertEquals("The control was updated", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID())));
+            Assert.assertEquals("The control has the specified text value", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID()) && Objects.equals(((ButtonControl) updatedControl).getText(), control.getText())));
+        }
+        catch (InterruptedException | ExecutionException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void can_set_cooldown() {
+        try {
+            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+                    .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
+                    .thenCompose(interactiveControls -> {
+                        for (InteractiveControl interactiveControl : interactiveControls) {
+                            if (interactiveControl instanceof ButtonControl) {
+                                return CompletableFuture.completedFuture((ButtonControl) interactiveControl);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    })
+                    .get();
+
+            if (control == null) {
+                Assert.fail("No button control was found to test");
+            }
+
+            Set<InteractiveControl> updatedControls = gameClient.using(CONTROL_SERVICE_PROVIDER).update(control.setCooldown(Instant.now().plusSeconds(120)))
+                    .thenCompose(updatePromises -> {
+                        for (InteractiveControl key : updatePromises.keySet()) {
+                            if (key.getControlID().equals(control.getControlID())) {
+                                return updatePromises.get(key);
+                            }
+                        }
+                        return CompletableFuture.completedFuture(Collections.emptySet());
+                    })
+                    .get();
+
+            Assert.assertEquals("The control was updated", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID())));
+            Assert.assertEquals("The control has the specified cooldown value", true, updatedControls.stream().anyMatch(updatedControl -> updatedControl.getControlID().equals(control.getControlID()) && Objects.equals(((ButtonControl) updatedControl).getCooldown(), control.getCooldown())));
+        }
+        catch (InterruptedException | ExecutionException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+
+    @Test
     public void can_self_create() {
         try {
-            ButtonControl control = new ButtonControl("test-control").addPosition(new InteractiveControlPosition(InteractiveCanvasSize.LARGE));
+            ButtonControl control = new ButtonControl("test-control-7").addPosition(new InteractiveControlPosition(InteractiveCanvasSize.LARGE));
             gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             Assert.assertEquals("Button control was created", true, control.create(gameClient).get());
 

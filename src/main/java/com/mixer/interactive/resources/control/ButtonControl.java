@@ -16,9 +16,9 @@ import java.util.Collection;
 public class ButtonControl extends InteractiveControl<ButtonControl> {
 
     /**
-     * JavaScript keycode which participant’s use to trigger this button via their keyboard
+     * JavaScript keyCode which participant’s use to trigger this button via their keyboard
      */
-    private Integer keycode;
+    private Integer keyCode;
 
     /**
      * The text displayed on a button
@@ -75,28 +75,28 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
     }
 
     /**
-     * Returns the keycode for this <code>ButtonControl</code>.
+     * Returns the keyCode for this <code>ButtonControl</code>.
      *
-     * @return  The keycode for this <code>ButtonControl</code>
+     * @return  The keyCode for this <code>ButtonControl</code>
      *
      * @since   1.0.0
      */
-    public Integer getKeycode() {
-        return keycode;
+    public Integer getKeyCode() {
+        return keyCode;
     }
 
     /**
-     * Sets the keycode for this <code>ButtonControl</code>.
+     * Sets the keyCode for this <code>ButtonControl</code>.
      *
-     * @param   keycode
-     *          The keycode to be used for this <code>ButtonControl</code>
+     * @param   keyCode
+     *          The keyCode to be used for this <code>ButtonControl</code>
      *
      * @return  <code>this</code> for method chaining
      *
      * @since   1.0.0
      */
-    public ButtonControl setKeycode(Integer keycode) {
-        this.keycode = keycode;
+    public ButtonControl setKeyCode(Integer keyCode) {
+        this.keyCode = keyCode;
         return this;
     }
 
@@ -296,7 +296,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
                 if (o instanceof ButtonControl && this.equals(o)) {
                     this.meta = ((ButtonControl) o).meta;
                     this.setDisabled(((ButtonControl) o).isDisabled());
-                    this.keycode = ((ButtonControl) o).keycode;
+                    this.keyCode = ((ButtonControl) o).keyCode;
                     this.text = ((ButtonControl) o).text;
                     this.cost = ((ButtonControl) o).cost;
                     this.progress = ((ButtonControl) o).progress;

@@ -13,6 +13,8 @@ import com.mixer.interactive.resources.scene.InteractiveScene;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.mixer.interactive.GameClient.RPC_SERVICE_PROVIDER;
