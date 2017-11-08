@@ -347,7 +347,7 @@ public class GameClient {
      * @since   1.0.0
      */
     public CompletableFuture<Boolean> connect(String oauthToken, String shareCode) {
-        return connect(oauthToken, shareCode);
+        return connect(oauthToken, shareCode, null);
     }
 
     /**
