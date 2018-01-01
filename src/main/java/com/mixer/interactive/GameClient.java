@@ -278,11 +278,11 @@ public class GameClient {
 
     /**
      * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
-     * using an OAuth Bearer token to authenticate itself with the Interactive service and the appropriate share code
-     * for the integration.
+     * using either an OAuth Bearer token or xtoken to authenticate itself with the Interactive service and the
+     * appropriate share code for the integration.
      *
-     * @param   oauthToken
-     *          An OAuth Bearer token
+     * @param   token
+     *          Authentication token
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
      * @param   hostURI
@@ -290,15 +290,15 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    private boolean connectBlocking(String oauthToken, String shareCode, URI hostURI) throws InteractiveNoHostsFoundException {
-        if (oauthToken != null && !oauthToken.isEmpty()) {
+    private boolean connectBlocking(String token, String shareCode, URI hostURI) throws InteractiveNoHostsFoundException {
+        if (token != null && !token.isEmpty()) {
             URI interactiveHost = hostURI != null ? hostURI : EndpointUtil.getInteractiveHost().getAddress();
 
             if (shareCode != null && !shareCode.isEmpty()) {
-                webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, oauthToken, projectVersionId, shareCode);
+                webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId, shareCode);
             }
             else {
-                webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, oauthToken, projectVersionId);
+                webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId);
             }
 
             try {
@@ -318,27 +318,27 @@ public class GameClient {
     }
 
     /**
-     * Connects the game client to it's associated Interactive integration on the Interactive service, using an OAuth
-     * Bearer token to authenticate itself with the Interactive service.
+     * Connects the game client to it's associated Interactive integration on the Interactive service, using either an
+     * OAuth Bearer token or an xtoken to authenticate itself with the Interactive service.
      *
-     * @param   oauthToken
-     *          An OAuth Bearer token
+     * @param   token
+     *          Authentication token
      *
      * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String oauthToken) {
-        return connect(oauthToken, null, null);
+    public CompletableFuture<Boolean> connect(String token) {
+        return connect(token, null, null);
     }
 
     /**
-     * Connects the game client to it's associated Interactive integration on the Interactive service, using an OAuth
-     * Bearer token to authenticate itself with the Interactive service and the appropriate share code for the
-     * integration.
+     * Connects the game client to it's associated Interactive integration on the Interactive service, using either an
+     * OAuth Bearer token or an xtoken to authenticate itself with the Interactive service and the appropriate share
+     * code for the integration.
      *
-     * @param   oauthToken
-     *          An OAuth Bearer token
+     * @param   token
+     *          Authentication token
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
      *
@@ -346,16 +346,16 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String oauthToken, String shareCode) {
-        return connect(oauthToken, shareCode, null);
+    public CompletableFuture<Boolean> connect(String token, String shareCode) {
+        return connect(token, shareCode, null);
     }
 
     /**
      * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
-     * using an OAuth Bearer token to authenticate itself with the Interactive service.
+     * using either an OAuth Bearer token or a xtoken to authenticate itself with the Interactive service.
      *
-     * @param   oauthToken
-     *          An OAuth Bearer token
+     * @param   token
+     *          Authentication token
      * @param   interactiveHost
      *          <code>URI</code> for an Interactive service host
      *
@@ -363,17 +363,17 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String oauthToken, URI interactiveHost) {
-        return connect(oauthToken, null, interactiveHost);
+    public CompletableFuture<Boolean> connect(String token, URI interactiveHost) {
+        return connect(token, null, interactiveHost);
     }
 
     /**
      * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
-     * using an OAuth Bearer token to authenticate itself with the Interactive service and the appropriate share code
-     * for the integration.
+     * using either an OAuth Bearer token or a xtoken to authenticate itself with the Interactive service and the
+     * appropriate share code for the integration.
      *
-     * @param   oauthToken
-     *          An OAuth Bearer token
+     * @param   token
+     *          Authentication token
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
      * @param   interactiveHost
@@ -383,10 +383,10 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String oauthToken, String shareCode, URI interactiveHost) {
+    public CompletableFuture<Boolean> connect(String token, String shareCode, URI interactiveHost) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return connectBlocking(oauthToken, shareCode, interactiveHost);
+                return connectBlocking(token, shareCode, interactiveHost);
             }
             catch (InteractiveNoHostsFoundException e) {
                 throw new CompletionException(e);

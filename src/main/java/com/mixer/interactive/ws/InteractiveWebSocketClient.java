@@ -110,18 +110,18 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      *          The <code>GameClient</code> that owns this websocket client
      * @param   uri
      *          The <code>URI</code> address for the <code>InteractiveHost</code> to connect to
-     * @param   oauthToken
-     *          OAuth Bearer token
+     * @param   token
+     *          Authorization token. Can be either an OAuth Bearer token or a xtoken
      * @param   projectVersionId
      *          The project version ID for the Interactive integration to connect to
      *
      * @since   1.0.0
      */
-    public InteractiveWebSocketClient(GameClient gameClient, URI uri, String oauthToken, Number projectVersionId) {
+    public InteractiveWebSocketClient(GameClient gameClient, URI uri, String token, Number projectVersionId) {
         this(gameClient, uri, ImmutableMap.<String, String>builder()
                 .put("X-Protocol-Version", "2.0")
                 .put("X-Interactive-Version", String.valueOf(projectVersionId))
-                .put("Authorization", "Bearer " + oauthToken)
+                .put("Authorization", token.startsWith("XBL3.0") ? token : "Bearer " + token)
                 .build());
     }
 
@@ -132,8 +132,8 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      *          The <code>GameClient</code> that owns this websocket client
      * @param   uri
      *          The <code>URI</code> address for the <code>InteractiveHost</code> to connect to
-     * @param   oauthToken
-     *          OAuth Bearer token
+     * @param   token
+     *          Authorization token. Can be either an OAuth Bearer token or a xtoken
      * @param   projectVersionId
      *          The project version ID for the Interactive integration to connect to
      * @param   shareCode
@@ -141,12 +141,12 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      *
      * @since   1.0.0
      */
-    public InteractiveWebSocketClient(GameClient gameClient, URI uri, String oauthToken, Number projectVersionId, String shareCode) {
+    public InteractiveWebSocketClient(GameClient gameClient, URI uri, String token, Number projectVersionId, String shareCode) {
         this(gameClient, uri, ImmutableMap.<String, String>builder()
                 .put("X-Protocol-Version", "2.0")
                 .put("X-Interactive-Version", String.valueOf(projectVersionId))
                 .put("X-Interactive-Sharecode", shareCode)
-                .put("Authorization", "Bearer " + oauthToken)
+                .put("Authorization", token.startsWith("XBL3.0") ? token : "Bearer " + token)
                 .build());
     }
 
