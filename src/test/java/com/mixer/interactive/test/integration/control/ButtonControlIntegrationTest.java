@@ -11,17 +11,12 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.awt.*;
 import java.time.Instant;
-import java.time.temporal.TemporalAmount;
-import java.time.temporal.TemporalUnit;
-import java.util.*;
+import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static com.mixer.interactive.GameClient.CONTROL_SERVICE_PROVIDER;
 import static com.mixer.interactive.test.util.TestUtils.*;

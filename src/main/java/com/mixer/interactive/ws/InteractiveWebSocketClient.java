@@ -27,6 +27,7 @@ import com.mixer.interactive.event.participant.ParticipantUpdateEvent;
 import com.mixer.interactive.event.scene.SceneCreateEvent;
 import com.mixer.interactive.event.scene.SceneDeleteEvent;
 import com.mixer.interactive.event.scene.SceneUpdateEvent;
+import com.mixer.interactive.exception.InteractiveConnectionException;
 import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.protocol.InteractivePacket;
 import com.mixer.interactive.protocol.MethodPacket;
@@ -98,10 +99,15 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     private AtomicInteger nextPacketId = new AtomicInteger(0);
 
     /**
-     * The last packet sequence number seen from the Interactive service.
-     * Read and updated internally as packets are sent and retrieved.
+     * The last packet sequence number seen from the Interactive service. Read and updated internally as packets are
+     * sent and retrieved.
      */
     private AtomicInteger lastSequenceNumber = new AtomicInteger();
+
+    /**
+     * A <code>CompletableFuture</code> promise holding the result of a connection attempt using this websocket client
+     */
+    private CompletableFuture<Boolean> connectionPromise;
 
     /**
      * Initialize a new <code>InteractiveWebSocketClient</code>.
@@ -178,6 +184,37 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     public ConcurrentMap<Integer, CompletableFuture<ReplyPacket>> getWaitingFuturesMap() {
         return waitingFuturesMap;
+    }
+
+    /**
+     * Returns the <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     * websocket client.
+     *
+     * @return  The <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     *          websocket client.
+     *
+     * @since   2.1.0
+     */
+    public CompletableFuture<Boolean> getConnectionPromise() {
+        return connectionPromise;
+    }
+
+    /**
+     * Sets the <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     * websocket client.
+     *
+     * @param   connectionPromise
+     *          The <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     *          websocket client.
+     *
+     * @return  The <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     *          websocket client.
+     *
+     * @since   2.1.0
+     */
+    public CompletableFuture<Boolean> setConnectionPromise(CompletableFuture<Boolean> connectionPromise) {
+        this.connectionPromise = connectionPromise;
+        return this.connectionPromise;
     }
 
     /**
@@ -336,6 +373,9 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     @Override
     public void onClose(int code, String reason, boolean closedRemotely) {
         LOG.info(String.format("Connection to the Interactive service closed (project version id: %s, code: %s, reason: '%s')", gameClient.getProjectVersionId(), code, reason));
+        if (connectionPromise != null && !connectionPromise.isDone()) {
+            connectionPromise.completeExceptionally(new InteractiveConnectionException(code, reason));
+        }
         gameClient.getEventBus().post(new ConnectionClosedEvent(gameClient.getProjectVersionId(), getURI(), code, reason, closedRemotely));
     }
 
@@ -414,8 +454,12 @@ public class InteractiveWebSocketClient extends WebSocketClient {
             InteractiveMethod method = methodPacket.getMethod();
             if (method != null) {
                 switch (method) {
-                    case HELLO:
+                    case HELLO: {
+                        if (connectionPromise != null && !connectionPromise.isDone()) {
+                            connectionPromise.complete(true);
+                        }
                         return new HelloEvent();
+                    }
                     case ON_READY:
                         return GameClient.GSON.fromJson(methodPacket.getRequestParameters(), ReadyEvent.class);
                     case SET_COMPRESSION:

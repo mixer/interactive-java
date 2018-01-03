@@ -1,7 +1,7 @@
 package com.mixer.interactive.test.integration.gameclient;
 
 import com.mixer.interactive.GameClient;
-import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
+import com.mixer.interactive.exception.InteractiveConnectionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.*;
@@ -33,7 +33,7 @@ public class GameClientIntegrationTest {
     private static GameClient gameClient;
 
     @BeforeClass
-    public static void setup_class() throws InteractiveNoHostsFoundException {
+    public static void setup_class() {
         LOG.warn("NOTE - RuntimeExceptions will be logged as part of this testing. They are not indications that tests are failing.");
     }
 
@@ -50,40 +50,26 @@ public class GameClientIntegrationTest {
 
     @Test
     public void can_connect_with_oauth_token() {
-        gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).join();
-        Assert.assertEquals("Can connect to Interactive using oauth token", true, gameClient.isConnected());
+        try {
+            Assert.assertEquals("The game client can connect with an OAuth token", true, gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get());
+        }
+        catch (InterruptedException | ExecutionException e) {
+            Assert.fail(e.getMessage());
+        }
     }
 
     @Test
     public void cannot_connect_with_null_oauth_token() {
-        gameClient.connect(null, INTERACTIVE_SERVICE_URI).join();
-        Assert.assertEquals("Cannot connect to Interactive with a null token", false, gameClient.isConnected());
-    }
-
-    @Test
-    public void cannot_connect_with_empty_oauth_token() {
-        gameClient.connect("", INTERACTIVE_SERVICE_URI).join();
-        Assert.assertEquals("Cannot connect to Interactive with an empty String as the token", false, gameClient.isConnected());
-    }
-
-    @Test
-    public void cannot_connect_with_invalid_oauth_token() {
-        gameClient.connect("afafpafjafhakjcn;avn74739i3jfnf", INTERACTIVE_SERVICE_URI).join();
-        waitForWebSocket();
-        Assert.assertEquals("Cannot connect to Interactive with invalid token", false, gameClient.isConnected());
-    }
-
-    @Test
-    public void cannot_connect_to_null_host_uri() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, null, null).get();
+            gameClient.connect(null, INTERACTIVE_SERVICE_URI).get();
+            Assert.fail("Exception should have been thrown");
         }
         catch (InterruptedException e) {
             Assert.fail(e.getMessage());
         }
         catch (ExecutionException e) {
-            if (e.getCause() instanceof InteractiveNoHostsFoundException) {
-                Assert.assertEquals("Cannot connect to Interactive with null as the host URL", false, gameClient.isConnected());
+            if (e.getCause() instanceof InteractiveConnectionException) {
+                Assert.assertEquals("Cannot connect to Interactive with a null token", 4019, ((InteractiveConnectionException) e.getCause()).getErrorCode());
             }
             else {
                 Assert.fail(e.getMessage());
@@ -92,21 +78,98 @@ public class GameClientIntegrationTest {
     }
 
     @Test
+    public void cannot_connect_with_empty_oauth_token() {
+        try {
+            gameClient.connect("", INTERACTIVE_SERVICE_URI).get();
+            Assert.fail("Exception should have been thrown");
+        }
+        catch (InterruptedException e) {
+            Assert.fail(e.getMessage());
+        }
+        catch (ExecutionException e) {
+            if (e.getCause() instanceof InteractiveConnectionException) {
+                Assert.assertEquals("Cannot connect to Interactive with an empty String as the token", 4019, ((InteractiveConnectionException) e.getCause()).getErrorCode());
+            }
+            else {
+                Assert.fail(e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void cannot_connect_with_invalid_oauth_token() {
+        try {
+            gameClient.connect("afafpafjafhakjcn;avn74739i3jfnf", INTERACTIVE_SERVICE_URI).get();
+            Assert.fail("Exception should have been thrown");
+        }
+        catch (ExecutionException e) {
+            if (e.getCause() instanceof InteractiveConnectionException) {
+                Assert.assertEquals("Cannot connect to Interactive with invalid token", 4019, ((InteractiveConnectionException) e.getCause()).getErrorCode());
+            }
+            else {
+                Assert.fail(e.getMessage());
+            }
+        }
+        catch (InterruptedException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
     public void cannot_connect_to_empty_string_host_uri() {
-        gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("")).join();
-        Assert.assertEquals("Cannot connect to Interactive with an empty String for the host URL", false, gameClient.isConnected());
+        try {
+            gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("")).get();
+            Assert.fail("Exception should have been thrown");
+        }
+        catch (InterruptedException e) {
+            Assert.fail(e.getMessage());
+        }
+        catch (ExecutionException e) {
+            if (e.getCause() instanceof InteractiveConnectionException) {
+                Assert.assertEquals("Cannot connect to Interactive with an empty String for the host URL", false, gameClient.isConnected());
+            }
+            else {
+                Assert.fail(e.getMessage());
+            }
+        }
     }
 
     @Test
     public void cannot_connect_to_non_interactive_host() {
-        gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("ws://mixer.com/")).join();
-        Assert.assertEquals("Cannot connect to host that is not an Interactive host", false, gameClient.isConnected());
+        try {
+            gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("ws://mixer.com/")).get();
+            Assert.fail("Exception should have been thrown");
+        }
+        catch (InterruptedException e) {
+            Assert.fail(e.getMessage());
+        }
+        catch (ExecutionException e) {
+            if (e.getCause() instanceof InteractiveConnectionException) {
+                Assert.assertEquals("Cannot connect to host that is not an Interactive host", false, gameClient.isConnected());
+            }
+            else {
+                Assert.fail(e.getMessage());
+            }
+        }
     }
 
     @Test
     public void cannot_connect_using_invalid_scheme() {
-        gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("https://mixer.com/")).join();
-        Assert.assertEquals("Cannot connect to Interactive with invalid protocol", false, gameClient.isConnected());
+        try {
+            gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("https://mixer.com/")).get();
+            Assert.fail("Exception should have been thrown");
+        }
+        catch (InterruptedException e) {
+            Assert.fail(e.getMessage());
+        }
+        catch (ExecutionException e) {
+            if (e.getCause() instanceof InteractiveConnectionException) {
+                Assert.assertEquals("Cannot connect to Interactive with invalid protocol", false, gameClient.isConnected());
+            }
+            else {
+                Assert.fail(e.getMessage());
+            }
+        }
     }
 
     @Test

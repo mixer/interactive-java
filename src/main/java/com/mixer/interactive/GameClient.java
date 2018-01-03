@@ -7,6 +7,7 @@ import com.google.gson.*;
 import com.mixer.interactive.event.UndefinedInteractiveEvent;
 import com.mixer.interactive.event.control.ControlDeleteEvent;
 import com.mixer.interactive.event.control.input.ControlInputEvent;
+import com.mixer.interactive.exception.InteractiveConnectionException;
 import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
@@ -36,9 +37,9 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -120,6 +121,16 @@ public class GameClient {
      * TLS SSL instance
      */
     private static final String TLS_INSTANCE = "TLS";
+
+    /**
+     * The default duration for timing out connection attempts.
+     */
+    private static final int CONNECTION_TIMEOUT_DURATION = 5;
+
+    /**
+     * The default time unit for timing out connection attempts.
+     */
+    private static final TimeUnit CONNECTION_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     /**
      * Parameter key name for <code>ready</code> method
@@ -281,7 +292,7 @@ public class GameClient {
      * using either an OAuth Bearer token or xtoken to authenticate itself with the Interactive service and the
      * appropriate share code for the integration.
      *
-     * @param   token
+     * @param   authToken
      *          Authentication token
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
@@ -290,31 +301,30 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    private boolean connectBlocking(String token, String shareCode, URI hostURI) throws InteractiveNoHostsFoundException {
-        if (token != null && !token.isEmpty()) {
-            URI interactiveHost = hostURI != null ? hostURI : EndpointUtil.getInteractiveHost().getAddress();
+    private void connectToInteractive(String authToken, String shareCode, URI hostURI) throws InteractiveNoHostsFoundException {
+        URI interactiveHost = hostURI != null ? hostURI : EndpointUtil.getInteractiveHost().getAddress();
+        String token = authToken != null ? authToken : "";
 
-            if (shareCode != null && !shareCode.isEmpty()) {
-                webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId, shareCode);
-            }
-            else {
-                webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId);
-            }
-
-            try {
-                if (SECURE_WEBSOCKET_SCHEME.equals(webSocketClient.getURI().getScheme())) {
-                    SSLContext sslContext = SSLContext.getInstance(TLS_INSTANCE);
-                    sslContext.init(null, null, null);
-                    webSocketClient.setSocket(sslContext.getSocketFactory().createSocket());
-                }
-                return webSocketClient.connectBlocking();
-            }
-            catch (InterruptedException | NoSuchAlgorithmException | IOException | KeyManagementException e) {
-                LOG.error(e.getMessage(), e);
-                webSocketClient = null;
-            }
+        if (shareCode != null && !shareCode.isEmpty()) {
+            webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId, shareCode);
         }
-        return false;
+        else {
+            webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId);
+        }
+
+        try {
+            if (SECURE_WEBSOCKET_SCHEME.equals(webSocketClient.getURI().getScheme())) {
+                SSLContext sslContext = SSLContext.getInstance(TLS_INSTANCE);
+                sslContext.init(null, null, null);
+                webSocketClient.setSocket(sslContext.getSocketFactory().createSocket());
+            }
+            webSocketClient.setConnectionPromise(new CompletableFuture<>());
+            webSocketClient.connect();
+        }
+        catch (NoSuchAlgorithmException | IOException | KeyManagementException e) {
+            LOG.error(e.getMessage(), e);
+            webSocketClient = null;
+        }
     }
 
     /**
@@ -337,7 +347,7 @@ public class GameClient {
      * OAuth Bearer token or an xtoken to authenticate itself with the Interactive service and the appropriate share
      * code for the integration.
      *
-     * @param   token
+     * @param   authToken
      *          Authentication token
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
@@ -346,15 +356,15 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String token, String shareCode) {
-        return connect(token, shareCode, null);
+    public CompletableFuture<Boolean> connect(String authToken, String shareCode) {
+        return connect(authToken, shareCode, null);
     }
 
     /**
      * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
      * using either an OAuth Bearer token or a xtoken to authenticate itself with the Interactive service.
      *
-     * @param   token
+     * @param   authToken
      *          Authentication token
      * @param   interactiveHost
      *          <code>URI</code> for an Interactive service host
@@ -363,8 +373,8 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String token, URI interactiveHost) {
-        return connect(token, null, interactiveHost);
+    public CompletableFuture<Boolean> connect(String authToken, URI interactiveHost) {
+        return connect(authToken, null, interactiveHost);
     }
 
     /**
@@ -372,7 +382,7 @@ public class GameClient {
      * using either an OAuth Bearer token or a xtoken to authenticate itself with the Interactive service and the
      * appropriate share code for the integration.
      *
-     * @param   token
+     * @param   authToken
      *          Authentication token
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
@@ -383,15 +393,28 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String token, String shareCode, URI interactiveHost) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return connectBlocking(token, shareCode, interactiveHost);
+    public CompletableFuture<Boolean> connect(String authToken, String shareCode, URI interactiveHost) {
+        CompletableFuture<Boolean> connectionPromise = new CompletableFuture<>();
+        try {
+            connectToInteractive(authToken, shareCode, interactiveHost);
+        }
+        catch (InteractiveNoHostsFoundException e) {
+            connectionPromise.completeExceptionally(e);
+            return connectionPromise;
+        }
+
+        this.getExecutorService().schedule(() -> {
+            if (webSocketClient != null && webSocketClient.getConnectionPromise() != null) {
+                if (webSocketClient.isOpen()) {
+                    webSocketClient.getConnectionPromise().complete(true);
+                }
+                else {
+                    webSocketClient.getConnectionPromise().completeExceptionally(new InteractiveConnectionException(String.format("Connection attempt to host '%s' timed out after %s %s", interactiveHost, CONNECTION_TIMEOUT_DURATION, CONNECTION_TIMEOUT_UNIT.name().toLowerCase())));
+                }
             }
-            catch (InteractiveNoHostsFoundException e) {
-                throw new CompletionException(e);
-            }
-        });
+        }, CONNECTION_TIMEOUT_DURATION, CONNECTION_TIMEOUT_UNIT);
+
+        return webSocketClient.getConnectionPromise();
     }
 
     /**

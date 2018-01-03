@@ -47,10 +47,11 @@ public class InteractiveControlIntegrationTest {
     }
 
     @After
-    public void teardownGameClient() {
+    public void teardownGameClient() throws InterruptedException {
         TestEventHandler.HANDLER.clear();
         gameClient.disconnect();
         gameClient = null;
+        Thread.sleep(500);
     }
 
     @Test
