@@ -1,10 +1,7 @@
 package com.mixer.interactive.gson;
 
 import com.google.gson.*;
-import com.mixer.interactive.event.control.input.ControlInputEvent;
-import com.mixer.interactive.event.control.input.ControlMouseDownInputEvent;
-import com.mixer.interactive.event.control.input.ControlMouseUpInputEvent;
-import com.mixer.interactive.event.control.input.ControlMoveInputEvent;
+import com.mixer.interactive.event.control.input.*;
 import com.mixer.interactive.resources.control.InteractiveControlInput;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -57,6 +54,12 @@ public class ControlInputEventAdapter implements JsonDeserializer<ControlInputEv
             }
             case "mouseup": {
                 return new ControlMouseUpInputEvent(participantID, transactionID, controlInput);
+            }
+            case "keydown": {
+                return new ControlKeyDownEvent(participantID, transactionID, controlInput);
+            }
+            case "keyup": {
+                return new ControlKeyUpEvent(participantID, transactionID, controlInput);
             }
             case "move": {
                 return new ControlMoveInputEvent(participantID, transactionID, controlInput);
