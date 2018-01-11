@@ -9,7 +9,6 @@ import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.resources.group.InteractiveGroup;
 import com.mixer.interactive.resources.participant.InteractiveParticipant;
 import com.mixer.interactive.resources.scene.InteractiveScene;
-import com.mixer.interactive.test.util.MockParticipantClient;
 import com.mixer.interactive.test.util.TestEventHandler;
 import com.mixer.interactive.test.util.TestUtils;
 import org.junit.After;
@@ -27,7 +26,6 @@ import java.util.stream.Collectors;
 
 import static com.mixer.interactive.GameClient.*;
 import static com.mixer.interactive.test.util.TestUtils.*;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests <code>InteractiveGroup</code> create/update/delete operations to the Interactive service.
@@ -267,20 +265,12 @@ public class InteractiveGroupIntegrationTest {
 
     @Test
     public void can_delete_group_and_reassign_to_other_group() {
-        assumeTrue(INTERACTIVE_SERVICE_URI.getHost().equals("localhost") || INTERACTIVE_SERVICE_URI.getHost().equals("127.0.0.1"));
         InteractiveGroup group1 = new InteractiveGroup("group-1");
         InteractiveGroup group2 = new InteractiveGroup("group-2");
         try {
             Set<InteractiveParticipant> testParticipants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group1, group2))
-                    .thenCompose(groupsCreated -> {
-                        try {
-                            return CompletableFuture.completedFuture(new MockParticipantClient().connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(groupsCreated -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .thenCompose(participants -> {
                         participants.forEach(participant -> participant.changeGroup(group1.getGroupID()));

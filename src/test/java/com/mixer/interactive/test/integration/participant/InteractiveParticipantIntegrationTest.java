@@ -8,10 +8,13 @@ import com.mixer.interactive.event.participant.ParticipantUpdateEvent;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.resources.group.InteractiveGroup;
 import com.mixer.interactive.resources.participant.InteractiveParticipant;
-import com.mixer.interactive.test.util.MockParticipantClient;
+import com.mixer.interactive.test.util.InteractiveTestParticipant;
 import com.mixer.interactive.test.util.TestEventHandler;
 import com.mixer.interactive.test.util.TestUtils;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -21,7 +24,6 @@ import java.util.stream.Collectors;
 import static com.mixer.interactive.GameClient.GROUP_SERVICE_PROVIDER;
 import static com.mixer.interactive.GameClient.PARTICIPANT_SERVICE_PROVIDER;
 import static com.mixer.interactive.test.util.TestUtils.*;
-import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests <code>InteractiveParticipant</code> update operations to the Interactive service.
@@ -38,11 +40,6 @@ public class InteractiveParticipantIntegrationTest {
      */
     private static GameClient gameClient;
 
-    @BeforeClass
-    public static void isLocal() {
-        assumeTrue(INTERACTIVE_SERVICE_URI.getHost().equals("localhost") || INTERACTIVE_SERVICE_URI.getHost().equals("127.0.0.1"));
-    }
-
     @Before
     public void setupGameClient() {
         gameClient = new GameClient(INTERACTIVE_PROJECT_ID);
@@ -51,7 +48,9 @@ public class InteractiveParticipantIntegrationTest {
 
     @After
     public void teardownGameClient() {
+        TestUtils.waitForWebSocket();
         TestEventHandler.HANDLER.clear();
+        TestUtils.TEST_PARTICIPANTS.forEach(InteractiveTestParticipant::disconnect);
         gameClient.disconnect();
         gameClient = null;
     }
@@ -59,31 +58,18 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void can_get_all_participants() {
         try {
-            MockParticipantClient mockParticipantClient = new MockParticipantClient();
             Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(mockParticipantClient.connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(connected -> TEST_PARTICIPANTS.get(0).connect())
+                    .thenCompose(connected -> TEST_PARTICIPANTS.get(1).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
-                    .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
+                    .thenCompose(connected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get();
-            Assert.assertEquals("The expected number of participants were returned", 1, participants.size());
 
-            participants = CompletableFuture.runAsync(() -> {
-                        try {
-                            mockParticipantClient.closeBlocking();
-                        }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    })
-                    .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants()).get();
-            Assert.assertEquals("The expected number of participants were returned", 0, participants.size());
+            int expectedParticipants = 2;
+            if (TestUtils.API_BASE_URL.contains("localhost") || TestUtils.API_BASE_URL.contains("127.0.0.1")) {
+                expectedParticipants = 1;
+            }
+            Assert.assertEquals("The expected number of participants were returned", expectedParticipants, participants.size());
         }
         catch (InterruptedException | ExecutionException e) {
             Assert.fail(e.getMessage());
@@ -93,34 +79,16 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void can_get_active_participants() {
         try {
-            MockParticipantClient mockParticipantClient = new MockParticipantClient();
             Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(mockParticipantClient.connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(connected -> TEST_PARTICIPANTS.get(0).connect())
+                    .thenCompose(connected -> TEST_PARTICIPANTS.get(1).connect())
                     .thenRun(() -> gameClient.ready(true))
+                    .thenRun(() -> TEST_PARTICIPANTS.get(0).giveInput("d-button-1"))
                     .thenRunAsync(TestUtils::waitForWebSocket)
-                    .thenRun(() -> mockParticipantClient.giveInput("d-button-1", "mousedown"))
-                    .thenRunAsync(TestUtils::waitForWebSocket)
-                    .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getActiveParticipants(0))
+                    .thenCompose(connected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getActiveParticipants(0))
                     .get();
-            Assert.assertEquals("The expected number of participants were returned", 1, participants.size());
 
-            participants = CompletableFuture.runAsync(() -> {
-                        try {
-                            mockParticipantClient.closeBlocking();
-                        }
-                        catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    })
-                    .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants()).get();
-            Assert.assertEquals("The expected number of participants were returned", 0, participants.size());
+            Assert.assertEquals("The expected number of participants were returned", 1, participants.size());
         }
         catch (InterruptedException | ExecutionException e) {
             Assert.fail(e.getMessage());
@@ -131,14 +99,7 @@ public class InteractiveParticipantIntegrationTest {
     public void can_update_participant() {
         try {
             InteractiveParticipant participant = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(new MockParticipantClient().connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get().iterator().next();
@@ -158,14 +119,7 @@ public class InteractiveParticipantIntegrationTest {
         try {
             InteractiveGroup testGroup = new InteractiveGroup("group-1");
             Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(new MockParticipantClient().connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(weWaited -> gameClient.using(GROUP_SERVICE_PROVIDER).create(testGroup))
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
@@ -189,15 +143,7 @@ public class InteractiveParticipantIntegrationTest {
     public void cannot_change_group_to_non_existent_group() {
         try {
             Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(new MockParticipantClient().connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
-                    .thenRunAsync(TestUtils::waitForWebSocket)
+                    .thenCompose(aVoid -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get();
             for (InteractiveParticipant participant : participants) {
@@ -225,14 +171,7 @@ public class InteractiveParticipantIntegrationTest {
     public void can_enable_and_disable_participants() {
         try {
             Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(new MockParticipantClient().connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get();
@@ -261,14 +200,7 @@ public class InteractiveParticipantIntegrationTest {
     public void can_self_update() {
         try {
             InteractiveParticipant participant = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(new MockParticipantClient().connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get().iterator().next();
@@ -290,14 +222,7 @@ public class InteractiveParticipantIntegrationTest {
     public void participant_join_event_posted() {
         try {
             Set<String> participantSessionIds = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(new MockParticipantClient().connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get()
@@ -341,15 +266,8 @@ public class InteractiveParticipantIntegrationTest {
     public void participant_updated_event_posted() {
         try {
             Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(new MockParticipantClient().connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
-                    .thenRunAsync(TestUtils::waitForWebSocket)
+                    .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
+                    .thenRun(TestUtils::waitForWebSocket)
                     .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get();
 
@@ -394,16 +312,9 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void participant_leave_event_posted() {
         try {
-            MockParticipantClient mockParticipantClient = new MockParticipantClient();
+            InteractiveTestParticipant testParticipant = TestUtils.TEST_PARTICIPANTS.get(0);
             Set<String> participantSessionIds = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
-                    .thenCompose(connected -> {
-                        try {
-                            return CompletableFuture.completedFuture(mockParticipantClient.connectBlocking());
-                        }
-                        catch (InterruptedException e) {
-                            return CompletableFuture.completedFuture(false);
-                        }
-                    })
+                    .thenCompose(connected -> testParticipant.connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get()
@@ -411,14 +322,9 @@ public class InteractiveParticipantIntegrationTest {
                     .map(InteractiveParticipant::getSessionID)
                     .collect(Collectors.toSet());
 
-            CompletableFuture.runAsync(() -> {
-                try {
-                    mockParticipantClient.closeBlocking();
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }).thenRunAsync(TestUtils::waitForWebSocket).get();
+            CompletableFuture.runAsync(testParticipant::disconnect)
+                    .thenRun(TestUtils::waitForWebSocket)
+                    .get();
 
             Assert.assertEquals("A participant leave event was posted for the expected participant",
                     true,

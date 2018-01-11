@@ -181,14 +181,13 @@ public class InteractiveSceneIntegrationTest {
             InteractiveScene testScene = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).getScenes())
                     .get().iterator().next();
-            JsonObject originalMeta = testScene.getMeta();
+            Assert.assertEquals("Scene does not have any meta properties", true, testScene.getMeta() == null || testScene.getMeta().entrySet().isEmpty());
             testScene.addMetaProperty("awesome_property", "awesome_value");
             CompletableFuture<Set<InteractiveScene>> updatePromise = gameClient.using(SCENE_SERVICE_PROVIDER).update(testScene);
             Assert.assertEquals("Only one scene was updated", 1, updatePromise.get().size());
             Assert.assertEquals("Only the expected scene was updated", testScene.getSceneID(), updatePromise.get().iterator().next().getSceneID());
 
             InteractiveScene updatedScene = updatePromise.get().iterator().next();
-            Assert.assertNotEquals("Updated scene has different meta properties than before", originalMeta, updatedScene.getMeta());
             Assert.assertEquals("Updated scene has the new meta property", "awesome_value", ((JsonObject) updatedScene.getMeta().get("awesome_property")).get("value").getAsString());
         }
         catch (InterruptedException | ExecutionException e) {
