@@ -211,7 +211,7 @@ public class InteractiveTestParticipantClient extends WebSocketClient {
     public void onClose(int code, String reason, boolean closedRemotely) {
         LOG.debug(String.format("Test participant '%s' disconnected (code: %s, reason: %s)", userId, code, reason));
         if (connectionPromise != null && !connectionPromise.isDone()) {
-            connectionPromise.completeExceptionally(new InteractiveConnectionException(code, reason));
+            connectionPromise.completeExceptionally(new InteractiveConnectionException(getURI(), code, reason));
         }
     }
 

@@ -58,7 +58,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void can_get_groups() {
         try {
-            Set<String> actualGroupIds = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<String> actualGroupIds = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).getGroups()).get()
                     .stream().map(InteractiveGroup::getGroupID).collect(Collectors.toSet());
             Set<String> expectedGroupIds = new HashSet<>(Collections.singletonList("default"));
@@ -72,7 +72,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void can_create_new_groups() {
         try {
-            Set<String> actualGroupIds = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<String> actualGroupIds = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("awesome-group-1"), new InteractiveGroup("awesome-group-2")))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).getGroups())
                     .get()
@@ -88,7 +88,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void can_create_group_in_non_default_scene() {
         try {
-            Set<InteractiveGroup> actualGroups = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveGroup> actualGroups = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("awesome-group", "scene-1")))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).getGroups())
                     .get();
@@ -105,7 +105,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void cannot_create_default_group() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("default")))
                     .get();
             Assert.fail("Exception should have been thrown");
@@ -126,7 +126,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void cannot_create_group_in_non_existent_scenes() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("awesome-group", "awesome-scene")))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).getGroups())
                     .get();
@@ -148,7 +148,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void cannot_create_duplicate_groups() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("awesome-group", "scene-1")))
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("awesome-group", "scene-2")))
                     .get();
@@ -171,7 +171,7 @@ public class InteractiveGroupIntegrationTest {
     public void can_update_group() {
         try {
             InteractiveGroup group = new InteractiveGroup("awesome-group");
-            Set<InteractiveGroup> updatedGroups = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveGroup> updatedGroups = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).update(group.addMetaProperty("awesome-property", "awesome-value")))
                     .get();
@@ -188,7 +188,7 @@ public class InteractiveGroupIntegrationTest {
     public void can_update_group_scene() {
         try {
             InteractiveGroup group = new InteractiveGroup("awesome-group", "scene-1");
-            Set<InteractiveGroup> updatedGroups = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveGroup> updatedGroups = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group))
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).getGroups())
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).update(group.setScene("scene-2")))
@@ -209,7 +209,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void cannot_update_non_existent_group() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).update(new InteractiveGroup("banana-group")))
                     .get();
             Assert.fail("Exception should have been thrown");
@@ -231,7 +231,7 @@ public class InteractiveGroupIntegrationTest {
     public void cannot_update_group_into_non_existent_scene() {
         try {
             InteractiveGroup group = new InteractiveGroup("awesome-group", "scene-1");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).update(group.setScene("banana-scene")))
                     .get();
@@ -253,7 +253,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void can_delete_group() {
         try {
-            CompletableFuture<Boolean> testPromise = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            CompletableFuture<Boolean> testPromise = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("group-1")))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).delete("group-1"));
             Assert.assertEquals("Can delete group", true, testPromise.get());
@@ -268,7 +268,7 @@ public class InteractiveGroupIntegrationTest {
         InteractiveGroup group1 = new InteractiveGroup("group-1");
         InteractiveGroup group2 = new InteractiveGroup("group-2");
         try {
-            Set<InteractiveParticipant> testParticipants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveParticipant> testParticipants = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group1, group2))
                     .thenCompose(groupsCreated -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
@@ -290,7 +290,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void cannot_delete_default_group() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).delete("default"))
                     .get();
             Assert.fail("Exception should have been thrown");
@@ -311,7 +311,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void cannot_delete_non_existent_group() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("awesome-group")))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).delete("not-so-awesome-group"))
                     .get();
@@ -333,7 +333,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void cannot_delete_group_and_reassign_to_non_exitent_group() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("awesome-group")))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).delete("awesome-group", "not-so-awesome-group"))
                     .get();
@@ -356,7 +356,7 @@ public class InteractiveGroupIntegrationTest {
     public void can_self_create() {
         try {
             InteractiveGroup group = new InteractiveGroup("awesome-group");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             Assert.assertEquals("Group was created", true, group.create(gameClient).get());
 
             boolean groupExists = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups()
@@ -372,7 +372,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void can_self_update() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             InteractiveGroup originalGroup = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups().get().iterator().next();
             Assert.assertEquals("Group was updated", true, originalGroup.addMetaProperty("awesome-property", 4).update(gameClient).get());
 
@@ -391,7 +391,7 @@ public class InteractiveGroupIntegrationTest {
     public void can_self_delete() {
         try {
             InteractiveGroup group = new InteractiveGroup("awesome-group");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             Assert.assertEquals("Group was created", true, group.create(gameClient).get());
 
             boolean groupExists = gameClient.using(GROUP_SERVICE_PROVIDER).getGroups()
@@ -414,7 +414,7 @@ public class InteractiveGroupIntegrationTest {
     public void group_create_event_posted() {
         try {
             InteractiveGroup testGroup = new InteractiveGroup("bacon-group");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(testGroup))
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .get();
@@ -434,7 +434,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void group_update_event_posted() {
         try {
-            InteractiveGroup group = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            InteractiveGroup group = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).getGroups()).get().iterator().next();
 
             group.addMetaProperty("awesome_property", "awesome_value");
@@ -458,7 +458,7 @@ public class InteractiveGroupIntegrationTest {
     @Test
     public void group_delete_event_posted() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("bacon-group")))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).delete("bacon-group"))
                     .thenRunAsync(TestUtils::waitForWebSocket)

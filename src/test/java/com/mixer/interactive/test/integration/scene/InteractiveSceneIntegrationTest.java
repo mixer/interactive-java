@@ -65,7 +65,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void can_get_scenes() {
         try {
-            Set<String> actualScenes = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<String> actualScenes = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(aVoid -> gameClient.using(SCENE_SERVICE_PROVIDER).getScenes())
                     .get().stream().map(InteractiveScene::getSceneID).collect(Collectors.toSet());
             Set<String> expectedScenes = new HashSet<>(Arrays.asList("default", "scene-1", "scene-2"));
@@ -79,7 +79,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void can_create_scene_without_controls() {
         try {
-            Set<String> actualScenes = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<String> actualScenes = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connect -> gameClient.using(SCENE_SERVICE_PROVIDER).create(new InteractiveScene("test-scene-1"), new InteractiveScene("test-scene-2")))
                     .thenCompose(scenes -> gameClient.using(SCENE_SERVICE_PROVIDER).getScenes())
                     .thenCompose(scenes -> CompletableFuture.completedFuture(
@@ -101,7 +101,7 @@ public class InteractiveSceneIntegrationTest {
             testScene.getControls().add(new ButtonControl("test-button-1"));
             testScene.getControls().add(new ButtonControl("test-button-2"));
 
-            Set<InteractiveScene> createdScenes = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveScene> createdScenes = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).create(testScene))
                     .get();
             Assert.assertEquals("Only one scene was created", 1, createdScenes.size());
@@ -136,7 +136,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void cannot_create_default_scene() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).create(new InteractiveScene("default")))
                     .get();
             Assert.fail("Exception should have been thrown");
@@ -157,7 +157,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void cannot_create_duplicate_scene() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).create(new InteractiveScene("scene-1")))
                     .get();
             Assert.fail("Exception should have been thrown");
@@ -178,7 +178,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void can_update_scene() {
         try {
-            InteractiveScene testScene = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            InteractiveScene testScene = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).getScenes())
                     .get().iterator().next();
             Assert.assertEquals("Scene does not have any meta properties", true, testScene.getMeta() == null || testScene.getMeta().entrySet().isEmpty());
@@ -198,7 +198,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void cannot_update_non_existent_scene() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).update(new InteractiveScene("banana-scene")))
                     .get();
             Assert.fail("Exception should have been thrown");
@@ -219,7 +219,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void can_delete_scene() {
         try {
-            Set<String> actualScenes = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<String> actualScenes = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).delete("scene-1"))
                     .thenCompose(deleted -> gameClient.using(SCENE_SERVICE_PROVIDER).getScenes())
                     .thenCompose(scenes -> CompletableFuture.completedFuture(
@@ -238,7 +238,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void can_delete_scene_and_reassign_groups() {
         try {
-            Set<InteractiveScene> scenes = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveScene> scenes = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("cool-group", "scene-1")))
                     .thenCompose(deleted -> gameClient.using(SCENE_SERVICE_PROVIDER).getScenes())
                     .thenCompose(groupCreated -> gameClient.using(SCENE_SERVICE_PROVIDER).delete("scene-1", "scene-2"))
@@ -274,7 +274,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void cannot_delete_default_scene() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).delete("default"))
                     .get();
             Assert.fail("Exception should have been thrown");
@@ -295,7 +295,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void cannot_delete_non_existent_scene() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).delete("banana-scene"))
                     .get();
             Assert.fail("Exception should have been thrown");
@@ -316,7 +316,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void cannot_delete_scene_and_reassign_groups_to_non_existent_scene() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("cool-group", "scene-1")))
                     .thenCompose(groupCreated -> gameClient.using(SCENE_SERVICE_PROVIDER).delete("scene-1", "banana-scene"))
                     .get();
@@ -338,7 +338,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void cannot_delete_scene_and_reassign_to_self() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(new InteractiveGroup("cool-group", "scene-1")))
                     .thenCompose(groupCreated -> gameClient.using(SCENE_SERVICE_PROVIDER).delete("scene-1", "scene-1"))
                     .get();
@@ -360,7 +360,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void can_delete_scene_and_recreate_it() {
         try {
-            Set<InteractiveScene> scenes = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveScene> scenes = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).getScenes())
                     .get();
             Assert.assertEquals("Scenes are already present", false, scenes.isEmpty());
@@ -384,7 +384,7 @@ public class InteractiveSceneIntegrationTest {
     public void can_self_create() {
         try {
             InteractiveScene scene = new InteractiveScene("awesome-scene");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             Assert.assertEquals("Scene was created", true, scene.create(gameClient).get());
 
             boolean sceneExists = gameClient.using(SCENE_SERVICE_PROVIDER).getScenes()
@@ -400,7 +400,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void can_self_update() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             InteractiveScene originalScene = gameClient.using(SCENE_SERVICE_PROVIDER).getScenes().get().iterator().next();
             originalScene.addMetaProperty("awesome-property", 4);
             Assert.assertEquals("Scene was updated", true, originalScene.update(gameClient).get());
@@ -420,7 +420,7 @@ public class InteractiveSceneIntegrationTest {
     public void can_self_delete() {
         try {
             InteractiveScene scene = new InteractiveScene("awesome-scene");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             Assert.assertEquals("Scene was created", true, scene.create(gameClient).get());
 
             boolean sceneExists = gameClient.using(SCENE_SERVICE_PROVIDER).getScenes()
@@ -443,7 +443,7 @@ public class InteractiveSceneIntegrationTest {
     public void scene_create_event_posted() {
         try {
             InteractiveScene scene = new InteractiveScene("bacon-scene");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).create(scene))
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .get();
@@ -463,7 +463,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void scene_update_event_posted() {
         try {
-            InteractiveScene scene = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            InteractiveScene scene = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).getScenes()).get().iterator().next();
 
             scene.addMetaProperty("awesome_property", "awesome_value");
@@ -487,7 +487,7 @@ public class InteractiveSceneIntegrationTest {
     @Test
     public void scene_delete_event_posted() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(SCENE_SERVICE_PROVIDER).delete("scene-1"))
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .get();

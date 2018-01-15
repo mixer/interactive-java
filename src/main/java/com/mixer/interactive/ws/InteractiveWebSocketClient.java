@@ -372,9 +372,9 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     @Override
     public void onClose(int code, String reason, boolean closedRemotely) {
-        LOG.info(String.format("Connection to the Interactive service closed (project version id: %s, code: %s, reason: '%s')", gameClient.getProjectVersionId(), code, reason));
+        LOG.info(String.format("Connection to the Interactive host '%s' closed (project version id: %s, code: %s, reason: '%s')", getURI(), gameClient.getProjectVersionId(), code, reason));
         if (connectionPromise != null && !connectionPromise.isDone()) {
-            connectionPromise.completeExceptionally(new InteractiveConnectionException(code, reason));
+            connectionPromise.completeExceptionally(new InteractiveConnectionException(getURI(), code, reason));
         }
         gameClient.getEventBus().post(new ConnectionClosedEvent(gameClient.getProjectVersionId(), getURI(), code, reason, closedRemotely));
     }

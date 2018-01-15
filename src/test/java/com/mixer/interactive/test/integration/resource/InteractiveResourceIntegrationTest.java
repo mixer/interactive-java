@@ -51,7 +51,7 @@ public class InteractiveResourceIntegrationTest {
         try {
             InteractiveGroup group = new InteractiveGroup("awesome-group")
                     .addMetaProperty("awesome-property", "awesome-value");
-            Set<InteractiveGroup> groups = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveGroup> groups = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group))
                     .thenCompose(created -> gameClient.using(GROUP_SERVICE_PROVIDER).getGroups())
                     .get();
@@ -72,7 +72,7 @@ public class InteractiveResourceIntegrationTest {
     public void can_add_a_meta_property() {
         try {
             InteractiveGroup group = new InteractiveGroup("awesome-group");
-            Set<InteractiveGroup> updatedGroups = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveGroup> updatedGroups = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group))
                     .thenCompose(created -> {
                         group.addMetaProperty("awesome-property", "awesome-value");
@@ -98,7 +98,7 @@ public class InteractiveResourceIntegrationTest {
             InteractiveGroup group = new InteractiveGroup("awesome-group")
                     .addMetaProperty("awesome-property", "awesome-value")
                     .addMetaProperty("other-property", "other-value");
-            Set<InteractiveGroup> groups = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveGroup> groups = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group))
                     .thenCompose(created -> {
                         JsonObject metaObject = group.getMeta();
@@ -127,7 +127,7 @@ public class InteractiveResourceIntegrationTest {
             InteractiveGroup group = new InteractiveGroup("awesome-group")
                     .addMetaProperty("awesome-property", "awesome-value")
                     .addMetaProperty("other-property", "other-value");
-            Set<InteractiveGroup> groups = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveGroup> groups = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group))
                     .thenCompose(created -> {
                         JsonObject metaObject = group.getMeta();
@@ -155,7 +155,7 @@ public class InteractiveResourceIntegrationTest {
         try {
             InteractiveGroup group = new InteractiveGroup("awesome-group")
                     .addMetaProperty("awesome-property", "awesome-value");
-            Set<InteractiveGroup> groups = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveGroup> groups = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(GROUP_SERVICE_PROVIDER).create(group))
                     .thenCompose(created -> {
                         group.setMeta(null);

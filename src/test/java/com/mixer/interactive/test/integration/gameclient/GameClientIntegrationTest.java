@@ -51,7 +51,7 @@ public class GameClientIntegrationTest {
     @Test
     public void can_connect_with_oauth_token() {
         try {
-            Assert.assertEquals("The game client can connect with an OAuth token", true, gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get());
+            Assert.assertEquals("The game client can connect with an OAuth token", true, gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get());
         }
         catch (InterruptedException | ExecutionException e) {
             Assert.fail(e.getMessage());
@@ -61,7 +61,7 @@ public class GameClientIntegrationTest {
     @Test
     public void cannot_connect_with_null_oauth_token() {
         try {
-            gameClient.connect(null, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(null, INTERACTIVE_SERVICE_URI).get();
             Assert.fail("Exception should have been thrown");
         }
         catch (InterruptedException e) {
@@ -80,7 +80,7 @@ public class GameClientIntegrationTest {
     @Test
     public void cannot_connect_with_empty_oauth_token() {
         try {
-            gameClient.connect("", INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo("", INTERACTIVE_SERVICE_URI).get();
             Assert.fail("Exception should have been thrown");
         }
         catch (InterruptedException e) {
@@ -99,7 +99,7 @@ public class GameClientIntegrationTest {
     @Test
     public void cannot_connect_with_invalid_oauth_token() {
         try {
-            gameClient.connect("afafpafjafhakjcn;avn74739i3jfnf", INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo("afafpafjafhakjcn;avn74739i3jfnf", INTERACTIVE_SERVICE_URI).get();
             Assert.fail("Exception should have been thrown");
         }
         catch (ExecutionException e) {
@@ -118,7 +118,7 @@ public class GameClientIntegrationTest {
     @Test
     public void cannot_connect_to_empty_string_host_uri() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("")).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, null, URI.create("")).get();
             Assert.fail("Exception should have been thrown");
         }
         catch (InterruptedException e) {
@@ -137,7 +137,7 @@ public class GameClientIntegrationTest {
     @Test
     public void cannot_connect_to_non_interactive_host() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("ws://mixer.com/")).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, null, URI.create("ws://mixer.com/")).get();
             Assert.fail("Exception should have been thrown");
         }
         catch (InterruptedException e) {
@@ -156,7 +156,7 @@ public class GameClientIntegrationTest {
     @Test
     public void cannot_connect_using_invalid_scheme() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, null, URI.create("https://mixer.com/")).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, null, URI.create("https://mixer.com/")).get();
             Assert.fail("Exception should have been thrown");
         }
         catch (InterruptedException e) {
@@ -174,7 +174,7 @@ public class GameClientIntegrationTest {
 
     @Test
     public void can_disconnect() {
-        gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).join();
+        gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).join();
         Assert.assertEquals("Connected to Interactive", true, gameClient.isConnected());
         gameClient.disconnect().join();
         Assert.assertEquals("Disconnected from Interactive", false, gameClient.isConnected());

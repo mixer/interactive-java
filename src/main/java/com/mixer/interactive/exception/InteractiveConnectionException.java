@@ -1,5 +1,7 @@
 package com.mixer.interactive.exception;
 
+import java.net.URI;
+
 /**
  * Checked exception thrown when a websocket connection to the Mixer Interactive service fails to connect.
  *
@@ -41,8 +43,8 @@ public class InteractiveConnectionException extends InteractiveException {
      *
      * @since   2.1.0
      */
-    public InteractiveConnectionException(int errorCode, String reason) {
-        this(String.format("Unable to connect to Mixer Interactive (reason: %s, error code: %s)", reason, errorCode));
+    public InteractiveConnectionException(URI host, int errorCode, String reason) {
+        this(String.format("Unable to connect to Interactive host '%s' (reason: %s, error code: %s)", host, reason, errorCode));
         this.errorCode = errorCode;
         this.reason = reason;
     }

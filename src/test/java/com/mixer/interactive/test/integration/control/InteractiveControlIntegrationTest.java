@@ -60,7 +60,7 @@ public class InteractiveControlIntegrationTest {
             Set<String> expectedControlIds = new HashSet<>(Arrays.asList("d-button-1", "d-button-2", "d-button-3", "d-button-4", "d-joystick-1", "d-joystick-2",
                     "1-button-1", "1-button-2", "1-button-3", "1-button-4", "1-joystick-1", "1-joystick-2",
                     "2-button-1", "2-button-2", "2-button-3", "2-button-4", "2-joystick-1", "2-joystick-2"));
-            Set<InteractiveControl> controls = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveControl> controls = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .get();
 
@@ -75,7 +75,7 @@ public class InteractiveControlIntegrationTest {
     public void can_create_control() {
         try {
             ButtonControl buttonControl = new ButtonControl("test-button");
-            Boolean created = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Boolean created = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).create(buttonControl))
                     .thenCompose(createPromises -> createPromises.containsKey(buttonControl)
                             ? createPromises.get(buttonControl)
@@ -96,7 +96,7 @@ public class InteractiveControlIntegrationTest {
         try {
             ButtonControl firstControl = new ButtonControl("first-button");
             ButtonControl secondControl = new ButtonControl("first-button");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).create(firstControl, secondControl))
                     .get();
         }
@@ -117,7 +117,7 @@ public class InteractiveControlIntegrationTest {
     public void cannot_create_control_in_non_existent_scene() {
         try {
             InteractiveControl control = new ButtonControl("test-button", "awesome-scene");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).create(control))
                     .thenCompose(createPromises -> createPromises.get(control))
                     .get();
@@ -139,7 +139,7 @@ public class InteractiveControlIntegrationTest {
     @Test
     public void can_update_control_and_add_new_position() {
         try {
-            Set<InteractiveControl> controls = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveControl> controls = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .get();
             InteractiveControl control = controls.iterator().next();
@@ -161,7 +161,7 @@ public class InteractiveControlIntegrationTest {
     @Test
     public void can_update_control_and_change_its_position() {
         try {
-            Set<InteractiveControl> controls = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveControl> controls = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .get();
             InteractiveControl control = controls.iterator().next();
@@ -186,7 +186,7 @@ public class InteractiveControlIntegrationTest {
     @Test
     public void can_update_control_and_remove_a_position() {
         try {
-            Set<InteractiveControl> controls = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveControl> controls = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .get()
                     .stream()
@@ -210,7 +210,7 @@ public class InteractiveControlIntegrationTest {
     @Test
     public void can_delete_control() {
         try {
-            InteractiveControl originalControl = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            InteractiveControl originalControl = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .get().iterator().next();
 
@@ -228,7 +228,7 @@ public class InteractiveControlIntegrationTest {
     public void cannot_delete_control_that_does_not_exist() {
         try {
             ButtonControl control = new ButtonControl("awesome-control");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).delete(control))
                     .get().get(control).get();
             Assert.fail("Exception should have been thrown");
@@ -250,7 +250,7 @@ public class InteractiveControlIntegrationTest {
     public void create_control_event_posted() {
         try {
             ButtonControl control = new ButtonControl("bacon-button");
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).create(control))
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .get();
@@ -270,7 +270,7 @@ public class InteractiveControlIntegrationTest {
     @Test
     public void update_control_event_posted() {
         try {
-            InteractiveControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            InteractiveControl control = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls()).get().iterator().next();
 
             control.addMetaProperty("awesome_property", "awesome_value");
@@ -294,7 +294,7 @@ public class InteractiveControlIntegrationTest {
     @Test
     public void delete_control_event_posted() {
         try {
-            InteractiveControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            InteractiveControl control = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .thenCompose(controls -> CompletableFuture.completedFuture(controls.iterator().next()))
                     .get();

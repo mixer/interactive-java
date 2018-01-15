@@ -18,10 +18,7 @@ import com.mixer.interactive.resources.control.InteractiveCanvasSize;
 import com.mixer.interactive.resources.control.InteractiveControl;
 import com.mixer.interactive.resources.control.InteractiveControlInput;
 import com.mixer.interactive.resources.control.InteractiveControlType;
-import com.mixer.interactive.resources.core.BandwidthThrottle;
-import com.mixer.interactive.resources.core.CompressionScheme;
-import com.mixer.interactive.resources.core.InteractiveMemoryStatistic;
-import com.mixer.interactive.resources.core.ThrottleState;
+import com.mixer.interactive.resources.core.*;
 import com.mixer.interactive.resources.scene.InteractiveScene;
 import com.mixer.interactive.services.*;
 import com.mixer.interactive.util.EndpointUtil;
@@ -288,6 +285,8 @@ public class GameClient {
     }
 
     /**
+     * TODO Finish Javadoc - Indicate that this now attempts to connect to Interactive in a round robin fashion
+     *
      * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
      * using either an OAuth Bearer token or xtoken to authenticate itself with the Interactive service and the
      * appropriate share code for the integration.
@@ -339,10 +338,12 @@ public class GameClient {
      * @since   1.0.0
      */
     public CompletableFuture<Boolean> connect(String token) {
-        return connect(token, null, null);
+        return connect(token, null);
     }
 
     /**
+     * TODO Finish Javadoc - Indicate that this now attempts to connect to Interactive in a round robin fashion
+     *
      * Connects the game client to it's associated Interactive integration on the Interactive service, using either an
      * OAuth Bearer token or an xtoken to authenticate itself with the Interactive service and the appropriate share
      * code for the integration.
@@ -354,10 +355,41 @@ public class GameClient {
      *
      * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
      *
-     * @since   1.0.0
+     * @since   2.1.0
      */
     public CompletableFuture<Boolean> connect(String authToken, String shareCode) {
-        return connect(authToken, shareCode, null);
+        CompletableFuture<Boolean> result = new CompletableFuture<>();
+        ArrayList<InteractiveHost> hosts = new ArrayList<>();
+        try {
+            hosts.addAll(EndpointUtil.getInteractiveHosts());
+        } catch (InteractiveNoHostsFoundException e) {
+            result.completeExceptionally(e);
+        }
+        Iterator<InteractiveHost> hostIterator = hosts.iterator();
+        if (hostIterator.hasNext()) {
+            connectTo(authToken, shareCode, hostIterator.next().getAddress()).whenCompleteAsync((r, t) -> {
+                if (t == null) {
+                    result.complete(r);
+                }
+                else {
+                    while (hostIterator.hasNext()) {
+                        try {
+                            r = connectTo(authToken, shareCode, hostIterator.next().getAddress()).join();
+                            result.complete(r);
+                            return;
+                        }
+                        catch (Throwable next) {
+                            t.addSuppressed(next);
+                        }
+                    }
+                    result.completeExceptionally(t);
+                }
+            });
+        }
+        else {
+            result.completeExceptionally(new InteractiveNoHostsFoundException());
+        }
+        return result;
     }
 
     /**
@@ -373,8 +405,8 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String authToken, URI interactiveHost) {
-        return connect(authToken, null, interactiveHost);
+    public CompletableFuture<Boolean> connectTo(String authToken, URI interactiveHost) {
+        return connectTo(authToken, null, interactiveHost);
     }
 
     /**
@@ -393,7 +425,7 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String authToken, String shareCode, URI interactiveHost) {
+    public CompletableFuture<Boolean> connectTo(String authToken, String shareCode, URI interactiveHost) {
         CompletableFuture<Boolean> connectionPromise = new CompletableFuture<>();
         try {
             connectToInteractive(authToken, shareCode, interactiveHost);

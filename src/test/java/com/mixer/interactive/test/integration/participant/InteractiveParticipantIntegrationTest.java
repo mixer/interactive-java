@@ -58,7 +58,7 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void can_get_all_participants() {
         try {
-            Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveParticipant> participants = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TEST_PARTICIPANTS.get(0).connect())
                     .thenCompose(connected -> TEST_PARTICIPANTS.get(1).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
@@ -79,7 +79,7 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void can_get_active_participants() {
         try {
-            Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveParticipant> participants = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TEST_PARTICIPANTS.get(0).connect())
                     .thenCompose(connected -> TEST_PARTICIPANTS.get(1).connect())
                     .thenRun(() -> gameClient.ready(true))
@@ -99,7 +99,7 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void can_update_participant() {
         try {
-            InteractiveParticipant participant = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            InteractiveParticipant participant = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
@@ -119,7 +119,7 @@ public class InteractiveParticipantIntegrationTest {
     public void can_change_group() {
         try {
             InteractiveGroup testGroup = new InteractiveGroup("group-1");
-            Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveParticipant> participants = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(weWaited -> gameClient.using(GROUP_SERVICE_PROVIDER).create(testGroup))
@@ -143,7 +143,7 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void cannot_change_group_to_non_existent_group() {
         try {
-            Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveParticipant> participants = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(aVoid -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get();
@@ -171,7 +171,7 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void can_enable_and_disable_participants() {
         try {
-            Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveParticipant> participants = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(clientConnected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
@@ -200,7 +200,7 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void can_self_update() {
         try {
-            InteractiveParticipant participant = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            InteractiveParticipant participant = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
@@ -222,7 +222,7 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void participant_join_event_posted() {
         try {
-            Set<String> participantSessionIds = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<String> participantSessionIds = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
@@ -266,7 +266,7 @@ public class InteractiveParticipantIntegrationTest {
     @Test
     public void participant_updated_event_posted() {
         try {
-            Set<InteractiveParticipant> participants = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<InteractiveParticipant> participants = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TestUtils.TEST_PARTICIPANTS.get(0).connect())
                     .thenRun(TestUtils::waitForWebSocket)
                     .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
@@ -314,7 +314,7 @@ public class InteractiveParticipantIntegrationTest {
     public void participant_leave_event_posted() {
         try {
             InteractiveTestParticipant testParticipant = TestUtils.TEST_PARTICIPANTS.get(0);
-            Set<String> participantSessionIds = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            Set<String> participantSessionIds = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> testParticipant.connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(aVoid -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())

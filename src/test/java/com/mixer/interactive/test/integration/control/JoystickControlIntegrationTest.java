@@ -49,7 +49,7 @@ public class JoystickControlIntegrationTest {
     public void can_self_create() {
         try {
             JoystickControl control = new JoystickControl("test-control").addPosition(new InteractiveControlPosition(InteractiveCanvasSize.LARGE));
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             Assert.assertEquals("Joystick control was created", true, control.create(gameClient).get());
 
             boolean controlExists = gameClient.using(CONTROL_SERVICE_PROVIDER).getControls()
@@ -65,7 +65,7 @@ public class JoystickControlIntegrationTest {
     @Test
     public void can_self_update() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             JoystickControl control = gameClient.using(CONTROL_SERVICE_PROVIDER).getControls()
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
@@ -97,7 +97,7 @@ public class JoystickControlIntegrationTest {
     @Test
     public void can_self_delete() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             JoystickControl control = gameClient.using(CONTROL_SERVICE_PROVIDER).getControls()
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {

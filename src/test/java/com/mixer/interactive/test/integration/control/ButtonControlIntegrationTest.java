@@ -52,7 +52,7 @@ public class ButtonControlIntegrationTest {
     @Test
     public void can_set_cost() {
         try {
-            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            ButtonControl control = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
@@ -90,7 +90,7 @@ public class ButtonControlIntegrationTest {
     @Test
     public void can_set_keyCode() {
         try {
-            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            ButtonControl control = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
@@ -128,7 +128,7 @@ public class ButtonControlIntegrationTest {
     @Test
     public void can_set_tooltip() {
         try {
-            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            ButtonControl control = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
@@ -166,7 +166,7 @@ public class ButtonControlIntegrationTest {
     @Test
     public void can_set_progress() {
         try {
-            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            ButtonControl control = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
@@ -204,7 +204,7 @@ public class ButtonControlIntegrationTest {
     @Test
     public void can_set_text() {
         try {
-            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            ButtonControl control = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
@@ -242,7 +242,7 @@ public class ButtonControlIntegrationTest {
     @Test
     public void can_set_cooldown() {
         try {
-            ButtonControl control = gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+            ButtonControl control = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(created -> gameClient.using(CONTROL_SERVICE_PROVIDER).getControls())
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
@@ -282,7 +282,7 @@ public class ButtonControlIntegrationTest {
     public void can_self_create() {
         try {
             ButtonControl control = new ButtonControl("test-control-7").addPosition(new InteractiveControlPosition(InteractiveCanvasSize.LARGE));
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             Assert.assertEquals("Button control was created", true, control.create(gameClient).get());
 
             boolean controlExists = gameClient.using(CONTROL_SERVICE_PROVIDER).getControls()
@@ -298,7 +298,7 @@ public class ButtonControlIntegrationTest {
     @Test
     public void can_self_update() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             ButtonControl control = gameClient.using(CONTROL_SERVICE_PROVIDER).getControls()
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
@@ -331,7 +331,7 @@ public class ButtonControlIntegrationTest {
     @Test
     public void can_self_delete() {
         try {
-            gameClient.connect(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI).get();
             ButtonControl control = gameClient.using(CONTROL_SERVICE_PROVIDER).getControls()
                     .thenCompose(interactiveControls -> {
                         for (InteractiveControl interactiveControl : interactiveControls) {
