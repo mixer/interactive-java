@@ -5,6 +5,7 @@ import com.google.common.reflect.TypeToken;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.*;
 import com.mixer.interactive.event.UndefinedInteractiveEvent;
+import com.mixer.interactive.event.connection.ConnectionEstablishedEvent;
 import com.mixer.interactive.event.control.ControlDeleteEvent;
 import com.mixer.interactive.event.control.input.ControlInputEvent;
 import com.mixer.interactive.exception.InteractiveConnectionException;
@@ -12,6 +13,7 @@ import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
 import com.mixer.interactive.exception.InteractiveRequestNoReplyException;
 import com.mixer.interactive.gson.*;
+import com.mixer.interactive.manager.StateManager;
 import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.protocol.InteractivePacket;
 import com.mixer.interactive.resources.control.InteractiveCanvasSize;
@@ -178,6 +180,11 @@ public class GameClient {
     private InteractiveWebSocketClient webSocketClient;
 
     /**
+     * TODO Finish Javadoc
+     */
+    private StateManager stateManager;
+
+    /**
      * Initializes a new <code>GameClient</code>.
      *
      * @param   projectVersionId
@@ -186,12 +193,30 @@ public class GameClient {
      * @since   1.0.0
      */
     public GameClient(Number projectVersionId) {
+        this(projectVersionId, true);
+    }
+
+    /**
+     * Initializes a new <code>GameClient</code>.
+     *
+     * @param   projectVersionId
+     *          The project version ID for the Interactive integration the client will use
+     * @param   useStateManager
+     *          TODO
+     *
+     * @since   2.1.0
+     */
+    public GameClient(Number projectVersionId, boolean useStateManager) {
         this.projectVersionId = projectVersionId;
 
         serviceManager = new ServiceManager<>(this);
         registerServiceProviders();
 
+        stateManager = new StateManager(this);
         eventBus = new EventBus(projectVersionId.toString());
+        if (useStateManager) {
+            eventBus.register(stateManager);
+        }
         executor = Executors.newScheduledThreadPool(THREAD_POOL_SIZE, new ThreadFactoryBuilder()
                 .setNameFormat("interactive-project-" + this.projectVersionId + "-thread-%d")
                 .setDaemon(true)
@@ -214,10 +239,21 @@ public class GameClient {
      *
      * @return  The <code>ServiceManager</code> associated with the client
      *
-     * @since 1.0.0
+     * @since   2.1.0
      */
     public ServiceManager<AbstractServiceProvider> getServiceManager() {
         return serviceManager;
+    }
+
+    /**
+     * TODO Finish Javadoc
+     *
+     * @return  TODO
+     *
+     * @since   2.1.0
+     */
+    public StateManager getStateManager() {
+        return stateManager;
     }
 
     /**
@@ -285,48 +321,6 @@ public class GameClient {
     }
 
     /**
-     * TODO Finish Javadoc - Indicate that this now attempts to connect to Interactive in a round robin fashion
-     *
-     * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
-     * using either an OAuth Bearer token or xtoken to authenticate itself with the Interactive service and the
-     * appropriate share code for the integration.
-     *
-     * @param   authToken
-     *          Authentication token
-     * @param   shareCode
-     *          The share code provided by the author of the Interactive integration
-     * @param   hostURI
-     *          <code>URI</code> for an Interactive service host
-     *
-     * @since   1.0.0
-     */
-    private void connectToInteractive(String authToken, String shareCode, URI hostURI) throws InteractiveNoHostsFoundException {
-        URI interactiveHost = hostURI != null ? hostURI : EndpointUtil.getInteractiveHost().getAddress();
-        String token = authToken != null ? authToken : "";
-
-        if (shareCode != null && !shareCode.isEmpty()) {
-            webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId, shareCode);
-        }
-        else {
-            webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId);
-        }
-
-        try {
-            if (SECURE_WEBSOCKET_SCHEME.equals(webSocketClient.getURI().getScheme())) {
-                SSLContext sslContext = SSLContext.getInstance(TLS_INSTANCE);
-                sslContext.init(null, null, null);
-                webSocketClient.setSocket(sslContext.getSocketFactory().createSocket());
-            }
-            webSocketClient.setConnectionPromise(new CompletableFuture<>());
-            webSocketClient.connect();
-        }
-        catch (NoSuchAlgorithmException | IOException | KeyManagementException e) {
-            LOG.error(e.getMessage(), e);
-            webSocketClient = null;
-        }
-    }
-
-    /**
      * Connects the game client to it's associated Interactive integration on the Interactive service, using either an
      * OAuth Bearer token or an xtoken to authenticate itself with the Interactive service.
      *
@@ -342,11 +336,13 @@ public class GameClient {
     }
 
     /**
-     * TODO Finish Javadoc - Indicate that this now attempts to connect to Interactive in a round robin fashion
-     *
      * Connects the game client to it's associated Interactive integration on the Interactive service, using either an
      * OAuth Bearer token or an xtoken to authenticate itself with the Interactive service and the appropriate share
      * code for the integration.
+     *
+     * Connections to Interactive hosts are attempted in the order of hosts that are returned from the
+     * <code>interactive/hosts</code> endpoint. If no connection succeeds, then the future returns an
+     * <code>InteractiveConnectionException</code>.
      *
      * @param   authToken
      *          Authentication token
@@ -428,7 +424,7 @@ public class GameClient {
     public CompletableFuture<Boolean> connectTo(String authToken, String shareCode, URI interactiveHost) {
         CompletableFuture<Boolean> connectionPromise = new CompletableFuture<>();
         try {
-            connectToInteractive(authToken, shareCode, interactiveHost);
+            connect(authToken, shareCode, interactiveHost);
         }
         catch (InteractiveNoHostsFoundException e) {
             connectionPromise.completeExceptionally(e);
@@ -439,6 +435,7 @@ public class GameClient {
             if (webSocketClient != null && webSocketClient.getConnectionPromise() != null) {
                 if (webSocketClient.isOpen()) {
                     webSocketClient.getConnectionPromise().complete(true);
+                    eventBus.post(new ConnectionEstablishedEvent(projectVersionId, interactiveHost));
                 }
                 else {
                     webSocketClient.getConnectionPromise().completeExceptionally(new InteractiveConnectionException(String.format("Connection attempt to host '%s' timed out after %s %s", interactiveHost, CONNECTION_TIMEOUT_DURATION, CONNECTION_TIMEOUT_UNIT.name().toLowerCase())));
@@ -447,6 +444,46 @@ public class GameClient {
         }, CONNECTION_TIMEOUT_DURATION, CONNECTION_TIMEOUT_UNIT);
 
         return webSocketClient.getConnectionPromise();
+    }
+
+    /**
+     * Connects the game client to it's associated Interactive integration on a specific Interactive service host,
+     * using either an OAuth Bearer token or xtoken to authenticate itself with the Interactive service and the
+     * appropriate share code for the integration.
+     *
+     * @param   authToken
+     *          Authentication token
+     * @param   shareCode
+     *          The share code provided by the author of the Interactive integration
+     * @param   hostURI
+     *          <code>URI</code> for an Interactive service host
+     *
+     * @since   1.0.0
+     */
+    private void connect(String authToken, String shareCode, URI hostURI) throws InteractiveNoHostsFoundException {
+        URI interactiveHost = hostURI != null ? hostURI : EndpointUtil.getInteractiveHost().getAddress();
+        String token = authToken != null ? authToken : "";
+
+        if (shareCode != null && !shareCode.isEmpty()) {
+            webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId, shareCode);
+        }
+        else {
+            webSocketClient = new InteractiveWebSocketClient(this, interactiveHost, token, projectVersionId);
+        }
+
+        try {
+            if (SECURE_WEBSOCKET_SCHEME.equals(webSocketClient.getURI().getScheme())) {
+                SSLContext sslContext = SSLContext.getInstance(TLS_INSTANCE);
+                sslContext.init(null, null, null);
+                webSocketClient.setSocket(sslContext.getSocketFactory().createSocket());
+            }
+            webSocketClient.setConnectionPromise(new CompletableFuture<>());
+            webSocketClient.connect();
+        }
+        catch (NoSuchAlgorithmException | IOException | KeyManagementException e) {
+            LOG.error(e.getMessage(), e);
+            webSocketClient = null;
+        }
     }
 
     /**

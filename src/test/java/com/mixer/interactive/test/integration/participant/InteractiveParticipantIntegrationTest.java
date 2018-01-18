@@ -16,6 +16,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Instant;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -60,16 +61,12 @@ public class InteractiveParticipantIntegrationTest {
         try {
             Set<InteractiveParticipant> participants = gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
                     .thenCompose(connected -> TEST_PARTICIPANTS.get(0).connect())
-                    .thenCompose(connected -> TEST_PARTICIPANTS.get(1).connect())
+                    .thenCompose(connected -> TEST_PARTICIPANTS.get(0).connect())
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenCompose(connected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getAllParticipants())
                     .get();
 
-            int expectedParticipants = 2;
-            if (TestUtils.API_BASE_URL.contains("localhost") || TestUtils.API_BASE_URL.contains("127.0.0.1")) {
-                expectedParticipants = 1;
-            }
-            Assert.assertEquals("The expected number of participants were returned", expectedParticipants, participants.size());
+            Assert.assertEquals("The expected number of participants were returned", 1, participants.size());
         }
         catch (InterruptedException | ExecutionException e) {
             Assert.fail(e.getMessage());
@@ -86,10 +83,10 @@ public class InteractiveParticipantIntegrationTest {
                     .thenRunAsync(TestUtils::waitForWebSocket)
                     .thenRun(() -> TEST_PARTICIPANTS.get(0).giveInput("d-button-1"))
                     .thenRunAsync(TestUtils::waitForWebSocket)
-                    .thenCompose(connected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getActiveParticipants(0))
+                    .thenCompose(connected -> gameClient.using(PARTICIPANT_SERVICE_PROVIDER).getActiveParticipants(Instant.now().toEpochMilli()-10000))
                     .get();
 
-            Assert.assertEquals("The expected number of participants were returned", 2, participants.size());
+            Assert.assertEquals("The expected number of participants were returned", 1, participants.size());
         }
         catch (InterruptedException | ExecutionException e) {
             Assert.fail(e.getMessage());
