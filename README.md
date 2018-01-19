@@ -1,12 +1,12 @@
 # Mixer Interactive Java 2 [![Build Status](https://travis-ci.org/mixer/interactive-java.svg?branch=master)](https://travis-ci.org/mixer/interactive-java)
 
-The Java Interactivity SDK supports client-side development of application with Mixer Interactivity. The SDK implements the [Mixer interactive 2 protocol](https://dev.mixer.com/reference/interactive/protocol/protocol.pdf) specification. 
+The Java Interactivity SDK supports client-side development of application with Mixer Interactivity. The SDK implements the [Mixer Interactive 2 protocol](https://dev.mixer.com/reference/interactive/protocol/protocol.pdf) specification.
 
 For an introduction to Interactive 2.0, checkout the [reference docs](https://dev.mixer.com/reference/interactive/index.html) on the developers site.
 
 ## Release Notes
 
-The `interactive-java` repository currently is in a pre-release state. Please refer to the [release notes](https://github.com/mixer/interactive-java/releases) for more information.
+Please refer to the [release notes](https://github.com/mixer/interactive-java/releases) for more information.
 
 ## Documentation
 
@@ -39,7 +39,7 @@ Next, add this project as a `dependency` in your `pom.xml`:
   <dependency>
     <groupId>com.mixer</groupId>
     <artifactId>mixer-interactive-api</artifactId>
-    <version>2.0.2</version>
+    <version>2.1.0</version>
   </dependency>
 </dependencies>
 ```
