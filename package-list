@@ -9,6 +9,7 @@ com.mixer.interactive.event.participant
 com.mixer.interactive.event.scene
 com.mixer.interactive.exception
 com.mixer.interactive.gson
+com.mixer.interactive.manager
 com.mixer.interactive.protocol
 com.mixer.interactive.resources
 com.mixer.interactive.resources.control
