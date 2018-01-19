@@ -180,7 +180,7 @@ public class GameClient {
     private InteractiveWebSocketClient webSocketClient;
 
     /**
-     * TODO Finish Javadoc
+     * Manages the state cache for the game client
      */
     private StateManager stateManager;
 
@@ -202,7 +202,7 @@ public class GameClient {
      * @param   projectVersionId
      *          The project version ID for the Interactive integration the client will use
      * @param   useStateManager
-     *          TODO
+     *          Whether or not to use built in caching for the game client
      *
      * @since   2.1.0
      */
@@ -246,9 +246,9 @@ public class GameClient {
     }
 
     /**
-     * TODO Finish Javadoc
+     * Gets the StateManager for this game client.
      *
-     * @return  TODO
+     * @return  The StateManager for this game client
      *
      * @since   2.1.0
      */

@@ -13,7 +13,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * TODO Finish Javadoc.
+ * Manages collections of cached objects (scenes/controls/groups) for the game client associated with this.
  *
  * @author      Microsoft Corporation
  *
@@ -37,20 +37,21 @@ public class StateManager {
     private ScheduledFuture timeSyncFuture;
 
     /**
-     * TODO Finish Javadoc
+     * The game client for this StateManager
      */
     private GameClient gameClient;
 
     /**
-     * TODO Finish Javadoc
+     * The most recently calculated amount of time, in milliseconds, to adjust cooldowns by to account for network
+     * latency and differences in system time between the host running this game client and the Interactive service
      */
     private long timeAdjustment;
 
     /**
-     * TODO Finish Javadoc
+     * Constructs a new StateManager
      *
      * @param   gameClient
-     *          TODO
+     *          The game client associated with this StateManager
      *
      * @since   2.1.0
      */
@@ -59,8 +60,6 @@ public class StateManager {
     }
 
     /**
-     * TODO Finish Javadoc
-     *
      * Upon successful connection to Mixer Interactive, requests initial state information for the Interactive session and
      * sets up a scheduled future to maintain the time difference between the locally running integration and the connected
      * Mixer Interactive host.
@@ -72,7 +71,6 @@ public class StateManager {
      */
     @Subscribe
     public void onConnectionEstablished(ConnectionEstablishedEvent event) {
-        LOG.debug("event");
         if (gameClient.isConnected()) {
             timeSyncFuture = gameClient.getExecutorService().scheduleAtFixedRate(this::calculateTimeAdjustment, 0, 30, TimeUnit.SECONDS);
         }
@@ -95,9 +93,11 @@ public class StateManager {
     }
 
     /**
-     * TODO Finish Javadoc
+     * Returns the most recently calculated amount of time, in milliseconds, to adjust cooldowns by to account for
+     * network latency and differences in system time between the host running this game client and the Interactive
+     * service.
      *
-     * @return  TODO
+     * @return  The amount of time, in milliseconds, to adjust control cooldowns by
      *
      * @since   2.1.0
      */
@@ -106,7 +106,8 @@ public class StateManager {
     }
 
     /**
-     * TODO Finish Javadoc
+     * Calculate an approximate amount of time (in milliseconds) to adjust control cooldowns to accommodate for
+     * network latency and clock differences.
      *
      * @since   2.1.0
      */
@@ -129,7 +130,6 @@ public class StateManager {
                 }
             }
             timeAdjustment = Math.floorDiv(sumOfDeltas, successfulSamples);
-            LOG.debug(timeAdjustment);
         }
     }
 }

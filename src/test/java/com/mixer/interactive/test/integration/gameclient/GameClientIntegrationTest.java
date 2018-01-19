@@ -59,6 +59,25 @@ public class GameClientIntegrationTest {
     }
 
     @Test
+    public void can_calculate_time_adjustment() {
+        try {
+            gameClient.connectTo(OAUTH_BEARER_TOKEN, INTERACTIVE_SERVICE_URI)
+                    .thenRunAsync(() -> {
+                        try {
+                            Thread.sleep(10000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }).get();
+
+            Assert.assertNotEquals("The state manager has calculated a time adjustment", 0, gameClient.getStateManager().getTimeAdjustment());
+        }
+        catch (InterruptedException | ExecutionException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
     public void cannot_connect_with_null_oauth_token() {
         try {
             gameClient.connectTo(null, INTERACTIVE_SERVICE_URI).get();
