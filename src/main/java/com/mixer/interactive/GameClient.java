@@ -2,7 +2,7 @@ package com.mixer.interactive;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.reflect.TypeToken;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.google.common.util.concurrent.*;
 import com.google.gson.*;
 import com.mixer.interactive.event.UndefinedInteractiveEvent;
 import com.mixer.interactive.event.connection.ConnectionEstablishedEvent;
@@ -23,6 +23,7 @@ import com.mixer.interactive.resources.control.InteractiveControlType;
 import com.mixer.interactive.resources.core.*;
 import com.mixer.interactive.resources.scene.InteractiveScene;
 import com.mixer.interactive.services.*;
+import com.mixer.interactive.services.ServiceManager;
 import com.mixer.interactive.util.EndpointUtil;
 import com.mixer.interactive.ws.InteractiveWebSocketClient;
 import org.apache.logging.log4j.LogManager;
@@ -35,11 +36,10 @@ import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * <p>A <code>GameClient</code> is used to connect to a Interactive integration that is hosted on the Interactive service.
@@ -170,9 +170,9 @@ public class GameClient {
     private final EventBus eventBus;
 
     /**
-     * Thread executor service for creating <code>CompletableFutures</code>
+     * Thread executor service for creating <code>ListenableFutures</code>
      */
-    private final ScheduledExecutorService executor;
+    private final ListeningScheduledExecutorService executor;
 
     /**
      * WebSocket client that this game client uses to communicate with the Interactive service
@@ -217,10 +217,13 @@ public class GameClient {
         if (useStateManager) {
             eventBus.register(stateManager);
         }
-        executor = Executors.newScheduledThreadPool(THREAD_POOL_SIZE, new ThreadFactoryBuilder()
-                .setNameFormat("interactive-project-" + this.projectVersionId + "-thread-%d")
-                .setDaemon(true)
-                .build());
+        executor = MoreExecutors.listeningDecorator(
+                Executors.newScheduledThreadPool(THREAD_POOL_SIZE, new ThreadFactoryBuilder()
+                        .setNameFormat("interactive-project-" + this.projectVersionId + "-thread-%d")
+                        .setDaemon(true)
+                        .build()
+                )
+        );
     }
 
     /**
@@ -327,11 +330,11 @@ public class GameClient {
      * @param   token
      *          Authentication token
      *
-     * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
+     * @return  A <code>ListenableFuture</code> that completes when the connection attempt is finished
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connect(String token) {
+    public ListenableFuture<Boolean> connect(String token) {
         return connect(token, null);
     }
 
@@ -349,17 +352,17 @@ public class GameClient {
      * @param   shareCode
      *          The share code provided by the author of the Interactive integration
      *
-     * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
+     * @return  A <code>ListenableFuture</code> that completes when the connection attempt is finished
      *
      * @since   2.1.0
      */
-    public CompletableFuture<Boolean> connect(String authToken, String shareCode) {
+    public ListenableFuture<Boolean> connect(String authToken, String shareCode) {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         ArrayList<InteractiveHost> hosts = new ArrayList<>();
         try {
             hosts.addAll(EndpointUtil.getInteractiveHosts());
         } catch (InteractiveNoHostsFoundException e) {
-            result.completeExceptionally(e);
+            return Futures.immediateFailedFuture(e);
         }
         Iterator<InteractiveHost> hostIterator = hosts.iterator();
         if (hostIterator.hasNext()) {
@@ -383,7 +386,7 @@ public class GameClient {
             });
         }
         else {
-            result.completeExceptionally(new InteractiveNoHostsFoundException());
+            return Futures.immediateFailedFuture(new InteractiveNoHostsFoundException());
         }
         return result;
     }
@@ -397,11 +400,11 @@ public class GameClient {
      * @param   interactiveHost
      *          <code>URI</code> for an Interactive service host
      *
-     * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
+     * @return  A <code>ListenableFuture</code> that completes when the connection attempt is finished
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connectTo(String authToken, URI interactiveHost) {
+    public ListenableFuture<Boolean> connectTo(String authToken, URI interactiveHost) {
         return connectTo(authToken, null, interactiveHost);
     }
 
@@ -417,28 +420,29 @@ public class GameClient {
      * @param   interactiveHost
      *          <code>URI</code> for an Interactive service host
      *
-     * @return  A <code>CompletableFuture</code> that completes when the connection attempt is finished
+     * @return  A <code>ListenableFuture</code> that completes when the connection attempt is finished
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> connectTo(String authToken, String shareCode, URI interactiveHost) {
-        CompletableFuture<Boolean> connectionPromise = new CompletableFuture<>();
+    public ListenableFuture<Boolean> connectTo(String authToken, String shareCode, final URI interactiveHost) {
         try {
             connect(authToken, shareCode, interactiveHost);
         }
         catch (InteractiveNoHostsFoundException e) {
-            connectionPromise.completeExceptionally(e);
-            return connectionPromise;
+            return Futures.immediateFailedFuture(e);
         }
 
-        this.getExecutorService().schedule(() -> {
-            if (webSocketClient != null && webSocketClient.getConnectionPromise() != null) {
-                if (webSocketClient.isOpen()) {
-                    webSocketClient.getConnectionPromise().complete(true);
-                    eventBus.post(new ConnectionEstablishedEvent(projectVersionId, interactiveHost));
-                }
-                else {
-                    webSocketClient.getConnectionPromise().completeExceptionally(new InteractiveConnectionException(String.format("Connection attempt to host '%s' timed out after %s %s", interactiveHost, CONNECTION_TIMEOUT_DURATION, CONNECTION_TIMEOUT_UNIT.name().toLowerCase())));
+        this.getExecutorService().schedule(new Runnable() {
+            @Override
+            public void run() {
+                if (webSocketClient != null && webSocketClient.getConnectionPromise() != null) {
+                    if (webSocketClient.isOpen()) {
+                        webSocketClient.getConnectionPromise().set(true);
+                        eventBus.post(new ConnectionEstablishedEvent(projectVersionId, interactiveHost));
+                    }
+                    else {
+                        webSocketClient.getConnectionPromise().setException(new InteractiveConnectionException(String.format("Connection attempt to host '%s' timed out after %s %s", interactiveHost, CONNECTION_TIMEOUT_DURATION, CONNECTION_TIMEOUT_UNIT.name().toLowerCase())));
+                    }
                 }
             }
         }, CONNECTION_TIMEOUT_DURATION, CONNECTION_TIMEOUT_UNIT);
@@ -477,7 +481,7 @@ public class GameClient {
                 sslContext.init(null, null, null);
                 webSocketClient.setSocket(sslContext.getSocketFactory().createSocket());
             }
-            webSocketClient.setConnectionPromise(new CompletableFuture<>());
+            webSocketClient.setConnectionPromise(SettableFuture.<Boolean>create());
             webSocketClient.connect();
         }
         catch (NoSuchAlgorithmException | IOException | KeyManagementException e) {
@@ -489,22 +493,25 @@ public class GameClient {
     /**
      * Disconnects the client from the Interactive service.
      *
-     * @return  A <code>CompletableFuture</code> that completes when the client has been disconnected from the
+     * @return  A <code>ListenableFuture</code> that completes when the client has been disconnected from the
      *          Interactive service
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Void> disconnect() {
-        return CompletableFuture.runAsync(() -> {
-            if (isConnected()) {
-                try {
-                    webSocketClient.closeBlocking();
-                }
-                catch (InterruptedException e) {
-                    LOG.error(e.getMessage(), e);
-                }
-                finally {
-                    webSocketClient = null;
+    public ListenableFuture<?> disconnect() {
+        return executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                if (isConnected()) {
+                    try {
+                        webSocketClient.closeBlocking();
+                    }
+                    catch (InterruptedException e) {
+                        LOG.error(e.getMessage(), e);
+                    }
+                    finally {
+                        webSocketClient = null;
+                    }
                 }
             }
         });
@@ -640,7 +647,7 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Long> getTime() {
+    public ListenableFuture<Long> getTime() {
         return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_TIME, EMPTY_JSON_OBJECT, PARAM_KEY_TIME, Long.class);
     }
 
@@ -671,7 +678,7 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<InteractiveMemoryStatistic> getMemoryStats() {
+    public ListenableFuture<InteractiveMemoryStatistic> getMemoryStats() {
         return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_MEMORY_STATS, EMPTY_JSON_OBJECT, InteractiveMemoryStatistic.class);
     }
 
@@ -703,7 +710,7 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Map<InteractiveMethod, ThrottleState>> getThrottleState() {
+    public ListenableFuture<Map<InteractiveMethod, ThrottleState>> getThrottleState() {
         return using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_THROTTLE_STATE, JsonNull.INSTANCE, THROTTLE_STATE_MAP_TYPE);
     }
 
@@ -744,10 +751,10 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> setBandwidthThrottle(Map<InteractiveMethod, BandwidthThrottle> throttleMap) {
+    public ListenableFuture<Boolean> setBandwidthThrottle(Map<InteractiveMethod, BandwidthThrottle> throttleMap) {
         return throttleMap != null
                 ? using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.SET_BANDWIDTH_THROTTLE, GSON.toJsonTree(throttleMap))
-                : CompletableFuture.completedFuture(true);
+                : Futures.immediateFuture(true);
     }
 
     /**
