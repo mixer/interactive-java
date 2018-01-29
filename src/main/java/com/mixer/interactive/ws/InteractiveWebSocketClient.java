@@ -2,6 +2,7 @@ package com.mixer.interactive.ws;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mixer.interactive.GameClient;
@@ -45,7 +46,6 @@ import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
@@ -77,11 +77,18 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     private static final JsonParser JSON_PARSER = new JsonParser();
 
+    private static final Comparator<InteractivePacket> SEQUENCE_COMPARATOR = new Comparator<InteractivePacket>() {
+        @Override
+        public int compare(InteractivePacket o1, InteractivePacket o2) {
+            return Integer.compare(o1.getSequenceNumber(), o2.getSequenceNumber());
+        }
+    };
+
     /**
-     * <code>ConcurrentMap</code> of waiting <code>CompletableFuture</code> promises and the IDs for the packets that
+     * <code>ConcurrentMap</code> of waiting <code>SettableFuture</code> promises and the IDs for the packets that
      * made the request
      */
-    private final ConcurrentMap<Integer, CompletableFuture<ReplyPacket>> waitingFuturesMap = new ConcurrentSkipListMap<>();
+    private final ConcurrentMap<Integer, SettableFuture<ReplyPacket>> waitingFuturesMap = new ConcurrentSkipListMap<>();
 
     /**
      * The <code>GameClient</code> that owns this websocket client
@@ -105,9 +112,9 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     private AtomicInteger lastSequenceNumber = new AtomicInteger();
 
     /**
-     * A <code>CompletableFuture</code> promise holding the result of a connection attempt using this websocket client
+     * A <code>SettableFuture</code> promise holding the result of a connection attempt using this websocket client
      */
-    private CompletableFuture<Boolean> connectionPromise;
+    private SettableFuture<Boolean> connectionPromise;
 
     /**
      * Initialize a new <code>InteractiveWebSocketClient</code>.
@@ -174,45 +181,45 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     }
 
     /**
-     * Retrieves the <code>ConcurrentMap</code> of waiting <code>CompletableFuture</code> promises and the IDs for the
+     * Retrieves the <code>ConcurrentMap</code> of waiting <code>SettableFuture</code> promises and the IDs for the
      * packets that made the request.
      *
-     * @return  <code>ConcurrentMap</code> of waiting <code>CompletableFuture</code> promises and the IDs for the
+     * @return  <code>ConcurrentMap</code> of waiting <code>SettableFuture</code> promises and the IDs for the
      *          packets that made the request
      *
      * @since   2.0.0
      */
-    public ConcurrentMap<Integer, CompletableFuture<ReplyPacket>> getWaitingFuturesMap() {
+    public ConcurrentMap<Integer, SettableFuture<ReplyPacket>> getWaitingFuturesMap() {
         return waitingFuturesMap;
     }
 
     /**
-     * Returns the <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     * Returns the <code>SettableFuture</code> promise holding the result of a connection attempt using this
      * websocket client.
      *
-     * @return  The <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     * @return  The <code>SettableFuture</code> promise holding the result of a connection attempt using this
      *          websocket client.
      *
      * @since   2.1.0
      */
-    public CompletableFuture<Boolean> getConnectionPromise() {
+    public SettableFuture<Boolean> getConnectionPromise() {
         return connectionPromise;
     }
 
     /**
-     * Sets the <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     * Sets the <code>SettableFuture</code> promise holding the result of a connection attempt using this
      * websocket client.
      *
      * @param   connectionPromise
-     *          The <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     *          The <code>SettableFuture</code> promise holding the result of a connection attempt using this
      *          websocket client.
      *
-     * @return  The <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     * @return  The <code>SettableFuture</code> promise holding the result of a connection attempt using this
      *          websocket client.
      *
      * @since   2.1.0
      */
-    public CompletableFuture<Boolean> setConnectionPromise(CompletableFuture<Boolean> connectionPromise) {
+    public SettableFuture<Boolean> setConnectionPromise(SettableFuture<Boolean> connectionPromise) {
         this.connectionPromise = connectionPromise;
         return this.connectionPromise;
     }
@@ -346,7 +353,8 @@ public class InteractiveWebSocketClient extends WebSocketClient {
         List<InteractivePacket> packets = new ArrayList<>();
         JsonElement jsonObject = JSON_PARSER.parse(message);
         if (jsonObject.isJsonArray()) {
-            Collections.addAll(packets, GameClient.GSON.fromJson(jsonObject, INTERACTIVE_PACKET_SET_TYPE));
+            Set<InteractivePacket> receivedPackets = GameClient.GSON.fromJson(jsonObject, INTERACTIVE_PACKET_SET_TYPE);
+            packets.addAll(receivedPackets);
         }
         else {
             Collections.addAll(packets, GameClient.GSON.fromJson(jsonObject, InteractivePacket.class));
@@ -374,7 +382,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
     public void onClose(int code, String reason, boolean closedRemotely) {
         LOG.info(String.format("Connection to the Interactive host '%s' closed (project version id: %s, code: %s, reason: '%s')", getURI(), gameClient.getProjectVersionId(), code, reason));
         if (connectionPromise != null && !connectionPromise.isDone()) {
-            connectionPromise.completeExceptionally(new InteractiveConnectionException(getURI(), code, reason));
+            connectionPromise.setException(new InteractiveConnectionException(getURI(), code, reason));
         }
         gameClient.getEventBus().post(new ConnectionClosedEvent(gameClient.getProjectVersionId(), getURI(), code, reason, closedRemotely));
     }
@@ -411,7 +419,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
             return;
         }
 
-        receivedPackets.sort(Comparator.comparingInt(InteractivePacket::getSequenceNumber));
+        Collections.sort(receivedPackets, SEQUENCE_COMPARATOR);
 
         for (InteractivePacket packet : receivedPackets) {
             if (packet instanceof MethodPacket) {
@@ -428,9 +436,9 @@ public class InteractiveWebSocketClient extends WebSocketClient {
                 }
             }
             else if (packet instanceof ReplyPacket && getWaitingFuturesMap().containsKey(packet.getPacketID())) {
-                CompletableFuture<ReplyPacket> sendRequest = getWaitingFuturesMap().remove(packet.getPacketID());
+                SettableFuture<ReplyPacket> sendRequest = getWaitingFuturesMap().remove(packet.getPacketID());
                 if (!sendRequest.isDone()) {
-                    sendRequest.complete((ReplyPacket) packet);
+                    sendRequest.set((ReplyPacket) packet);
                 }
             }
         }
@@ -456,7 +464,7 @@ public class InteractiveWebSocketClient extends WebSocketClient {
                 switch (method) {
                     case HELLO: {
                         if (connectionPromise != null && !connectionPromise.isDone()) {
-                            connectionPromise.complete(true);
+                            connectionPromise.set(true);
                         }
                         return new HelloEvent();
                     }
