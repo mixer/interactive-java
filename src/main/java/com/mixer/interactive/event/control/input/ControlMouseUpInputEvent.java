@@ -14,14 +14,9 @@ import org.apache.logging.log4j.Logger;
 public class ControlMouseUpInputEvent extends ControlInputEvent {
 
     /**
-     * Logger.
-     */
-    private static final Logger LOG = LogManager.getLogger();
-
-    /**
      * Keycode the participant used when interacting with the control
      */
-    private final int button;
+    private final Integer button;
 
     /**
      * Initializes a new <code>ControlMouseUpInputEvent</code>.
@@ -40,10 +35,11 @@ public class ControlMouseUpInputEvent extends ControlInputEvent {
         super(participantID, transactionID, controlInput);
 
         if (!input.getRawInput().containsKey("button")) {
-            LOG.fatal("Could not find required parameters expected for ControlMouseUpInputEvent");
-            throw new IllegalArgumentException("Could not find required parameters expected for ControlMouseUpInputEvent");
+            this.button = null;
         }
-        this.button = input.getRawInput().get("button").getAsInt();
+        else {
+            this.button = input.getRawInput().get("button").getAsInt();
+        }
     }
 
     /**
@@ -53,7 +49,7 @@ public class ControlMouseUpInputEvent extends ControlInputEvent {
      *
      * @since   1.0.0
      */
-    public int getButton() {
+    public Integer getButton() {
         return button;
     }
 }

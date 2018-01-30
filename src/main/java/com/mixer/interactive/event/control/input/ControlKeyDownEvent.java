@@ -14,16 +14,6 @@ import org.apache.logging.log4j.Logger;
 public class ControlKeyDownEvent extends ControlInputEvent {
 
     /**
-     * Logger.
-     */
-    private static final Logger LOG = LogManager.getLogger();
-
-    /**
-     * Keycode the participant used when interacting with the control
-     */
-    private final int button;
-
-    /**
      * Initializes a new <code>ControlKeyDownInputEvent</code>.
      *
      * @param   participantID
@@ -38,22 +28,5 @@ public class ControlKeyDownEvent extends ControlInputEvent {
      */
     public ControlKeyDownEvent(String participantID, String transactionID, InteractiveControlInput controlInput) {
         super(participantID, transactionID, controlInput);
-
-        if (!input.getRawInput().containsKey("button")) {
-            LOG.fatal("Could not find required parameters expected for ControlKeyDownInputEvent");
-            throw new IllegalArgumentException("Could not find required parameters expected for ControlKeyDownInputEvent");
-        }
-        this.button = input.getRawInput().get("button").getAsInt();
-    }
-
-    /**
-     * Returns the keycode the participant used when interacting with the control.
-     *
-     * @return  Keycode the participant used when interacting with the control
-     *
-     * @since   1.0.0
-     */
-    public int getButton() {
-        return button;
     }
 }
