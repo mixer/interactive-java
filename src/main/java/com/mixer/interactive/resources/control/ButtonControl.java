@@ -2,8 +2,6 @@ package com.mixer.interactive.resources.control;
 
 import com.mixer.interactive.resources.InteractiveResource;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Collection;
 
 /**
@@ -234,22 +232,6 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
     }
 
     /**
-     * Sets the UTC unix timestamp (in milliseconds) for when the cooldown for this <code>ButtonControl</code> expires.
-     *
-     * @param   cooldown
-     *          The <code>Instant</code> for when the cooldown for this <code>ButtonControl</code>
-     *          expires
-     *
-     * @return  <code>this</code> for method chaining
-     *
-     * @since   1.0.0
-     */
-    public ButtonControl setCooldown(Instant cooldown) {
-        this.cooldown = cooldown.toEpochMilli();
-        return this;
-    }
-
-    /**
      * Adds the provided <code>Duration</code> to the existing cooldown for this <code>ButtonControl</code>.
      *
      * @param   duration
@@ -259,8 +241,8 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      *
      * @since   1.0.0
      */
-    public ButtonControl addToCooldown(Duration duration) {
-        return setCooldown(this.cooldown + duration.toMillis());
+    public ButtonControl addToCooldown(Number duration) {
+        return setCooldown(this.cooldown + duration.longValue());
     }
 
     /**

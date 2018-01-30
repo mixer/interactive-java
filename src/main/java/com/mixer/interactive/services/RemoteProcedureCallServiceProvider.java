@@ -12,6 +12,7 @@ import com.mixer.interactive.protocol.MethodPacket;
 import com.mixer.interactive.protocol.ReplyPacket;
 import com.mixer.interactive.ws.InteractiveWebSocketClient;
 
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,7 +141,7 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      *          An <code>InteractiveMethod</code> for the request
      * @param   params
      *          Json encoded map of parameters for the request
-     * @param   clazz
+     * @param   type
      *          Class of object to be parsed from reply
      * @param   <T>
      *          Class of object to be parsed from the reply
@@ -153,8 +154,8 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      *
      * @since   1.0.0
      */
-    public <T> ListenableFuture<T> makeRequest(InteractiveMethod method, JsonElement params, final Class<T> clazz) {
-        return makeRequest(method, params, null, clazz);
+    public <T> ListenableFuture<T> makeRequest(InteractiveMethod method, JsonElement params, final Type type) {
+        return makeRequest(method, params, null, type);
     }
 
     /**
@@ -180,7 +181,7 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      *          Json encoded map of parameters for the request
      * @param   memberName
      *          Member name of parameter to be parsed from reply
-     * @param   clazz
+     * @param   type
      *          Class of object to be parsed from reply
      * @param   <T>
      *          Class of object to be parsed from the reply
@@ -193,7 +194,7 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
      *
      * @since   1.0.0
      */
-    public <T> ListenableFuture<T> makeRequest(InteractiveMethod method, JsonElement params, final String memberName, final Class<T> clazz) {
+    public <T> ListenableFuture<T> makeRequest(InteractiveMethod method, JsonElement params, final String memberName, final Type type) {
         final MethodPacket requestPacket = new MethodPacket(claimNextPacketId(), method, params);
 
         return Futures.transform(send(requestPacket), new AsyncFunction<ReplyPacket, T>() {
@@ -207,10 +208,10 @@ public class RemoteProcedureCallServiceProvider extends AbstractServiceProvider 
                 }
                 if (replyPacket.getResult().isJsonObject()) {
                     if (memberName == null) {
-                        return Futures.immediateFuture(replyPacket.getResultAs(clazz));
+                        return Futures.immediateFuture((T) replyPacket.getResultAs(type));
                     }
                     else {
-                        return Futures.immediateFuture(GameClient.GSON.fromJson(((JsonObject) replyPacket.getResult()).get(memberName), clazz));
+                        return Futures.immediateFuture((T) GameClient.GSON.fromJson(((JsonObject) replyPacket.getResult()).get(memberName), type));
                     }
                 }
 

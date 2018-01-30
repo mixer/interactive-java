@@ -2,6 +2,10 @@ package com.mixer.interactive.resources.control;
 
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hashing;
+import com.google.common.hash.PrimitiveSink;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 import com.mixer.interactive.GameClient;
@@ -13,10 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 import static com.mixer.interactive.GameClient.CONTROL_SERVICE_PROVIDER;
@@ -442,9 +443,9 @@ public abstract class InteractiveControl<T extends InteractiveResource<T>>
      * @since   2.0.0
      */
     @Override
-    public CompletableFuture<Boolean> create(GameClient gameClient) {
+    public ListenableFuture<Boolean> create(GameClient gameClient) {
         if (gameClient == null || controlPositions.isEmpty()) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
         return gameClient.using(CONTROL_SERVICE_PROVIDER).create(this)
@@ -469,21 +470,27 @@ public abstract class InteractiveControl<T extends InteractiveResource<T>>
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Boolean> update(GameClient gameClient) {
+    public ListenableFuture<Boolean> update(GameClient gameClient) {
         if (gameClient == null || controlPositions.isEmpty()) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
-        return gameClient.using(CONTROL_SERVICE_PROVIDER).update(Collections.singletonList(this))
-                .thenCompose(updatePromises -> {
-                    for (InteractiveControl control : updatePromises.keySet()) {
-                        if (getControlID().equals(control.getControlID())) {
-                            return updatePromises.get(control);
-                        }
-                    }
-                    return CompletableFuture.supplyAsync(Collections::emptySet);
-                })
-                .thenCompose(updatedControls -> CompletableFuture.supplyAsync(() -> syncIfEqual(updatedControls)));
+//        return gameClient.using(CONTROL_SERVICE_PROVIDER).update(Collections.singletonList(this))
+//                .thenCompose(updatePromises -> {
+//                    for (InteractiveControl control : updatePromises.keySet()) {
+//                        if (getControlID().equals(control.getControlID())) {
+//                            return updatePromises.get(control);
+//                        }
+//                    }
+//                    return CompletableFuture.supplyAsync(Collections::emptySet);
+//                })
+//                .thenCompose(updatedControls -> CompletableFuture.supplyAsync(() -> syncIfEqual(updatedControls)));
+        return Futures.transform(gameClient.using(CONTROL_SERVICE_PROVIDER).update(this), new AsyncFunction<Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>>, Boolean>() {
+            @Override
+            public ListenableFuture<Boolean> apply(Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>> input) throws Exception {
+                return null;
+            }
+        });
     }
 
     /**
@@ -534,11 +541,20 @@ public abstract class InteractiveControl<T extends InteractiveResource<T>>
                 .putString(controlID, StandardCharsets.UTF_8)
                 .putString(kind.toString(), StandardCharsets.UTF_8)
                 .putBoolean(disabled)
-                .putObject(controlPositions, (Funnel<Set<InteractiveControlPosition>>) (controlPositions, into) ->
-                        controlPositions.forEach(controlPosition -> into.putInt(controlPosition.hashCode())))
-                .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
-                    if (from != null && !from.isJsonNull()) {
-                        into.putString(from.toString(), StandardCharsets.UTF_8);
+                .putObject(controlPositions, new Funnel<Set<InteractiveControlPosition>>() {
+                    @Override
+                    public void funnel(Set<InteractiveControlPosition> controlPositions, PrimitiveSink into) {
+                        for (InteractiveControlPosition controlPosition : controlPositions) {
+                            into.putInt(controlPosition.hashCode());
+                        }
+                    }
+                })
+                .putObject(meta, new Funnel<JsonElement>() {
+                    @Override
+                    public void funnel(JsonElement from, PrimitiveSink into) {
+                        if (from != null && !from.isJsonNull()) {
+                            into.putString(from.toString(), StandardCharsets.UTF_8);
+                        }
                     }
                 })
                 .hash()

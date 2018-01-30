@@ -7,7 +7,6 @@ import com.mixer.interactive.event.connection.ConnectionEstablishedEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.time.Instant;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +71,12 @@ public class StateManager {
     @Subscribe
     public void onConnectionEstablished(ConnectionEstablishedEvent event) {
         if (gameClient.isConnected()) {
-            timeSyncFuture = gameClient.getExecutorService().scheduleAtFixedRate(this::calculateTimeAdjustment, 0, 30, TimeUnit.SECONDS);
+            timeSyncFuture = gameClient.getExecutorService().scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    calculateTimeAdjustment();
+                }
+            }, 0, 30, TimeUnit.SECONDS);
         }
     }
 

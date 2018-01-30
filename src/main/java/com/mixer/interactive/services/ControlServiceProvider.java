@@ -1,6 +1,9 @@
 package com.mixer.interactive.services;
 
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
@@ -12,8 +15,7 @@ import com.mixer.interactive.resources.scene.InteractiveScene;
 
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
+import java.util.concurrent.Callable;
 
 import static com.mixer.interactive.GameClient.RPC_SERVICE_PROVIDER;
 import static com.mixer.interactive.GameClient.SCENE_SERVICE_PROVIDER;
@@ -79,13 +81,19 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public final CompletableFuture<Set<InteractiveControl>> getControls() {
-        return gameClient.using(SCENE_SERVICE_PROVIDER).getScenes()
-                .thenCompose(scenes -> {
-                    Set<InteractiveControl> controls = new HashSet<>();
-                    scenes.forEach(scene -> controls.addAll(scene.getControls()));
-                    return CompletableFuture.completedFuture(controls);
-                });
+    public final ListenableFuture<Set<InteractiveControl>> getControls() {
+        return Futures.transform(gameClient.using(SCENE_SERVICE_PROVIDER).getScenes(), new AsyncFunction<Set<InteractiveScene>, Set<InteractiveControl>>() {
+            @Override
+            public ListenableFuture<Set<InteractiveControl>> apply(Set<InteractiveScene> scenes) throws Exception {
+                Set<InteractiveControl> controls = new HashSet<>();
+                if (scenes != null) {
+                    for (InteractiveScene scene : scenes) {
+                        controls.addAll(scene.getControls());
+                    }
+                }
+                return Futures.immediateFuture(controls);
+            }
+        });
     }
 
     /**
@@ -115,7 +123,7 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Boolean>>> create(InteractiveControl ... controls) {
+    public ListenableFuture<Map<InteractiveControl, ListenableFuture<Boolean>>> create(InteractiveControl ... controls) {
         return create(Arrays.asList(controls));
     }
 
@@ -146,16 +154,22 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Boolean>>> create(Collection<InteractiveControl> controls) {
-        return CompletableFuture.supplyAsync(() -> {
-            Map<InteractiveControl, CompletableFuture<Boolean>> createPromises = new HashMap<>();
-            groupControls(controls).forEach((sceneId, interactiveControls) -> {
-                if (interactiveControls != null) {
-                    CompletableFuture<Boolean> createPromise = create(sceneId, interactiveControls);
-                    interactiveControls.forEach(control -> createPromises.put(control, createPromise));
+    public ListenableFuture<Map<InteractiveControl, ListenableFuture<Boolean>>> create(final Collection<InteractiveControl> controls) {
+        return gameClient.getExecutorService().submit(new Callable<Map<InteractiveControl, ListenableFuture<Boolean>>>() {
+            @Override
+            public Map<InteractiveControl, ListenableFuture<Boolean>> call() throws Exception {
+                Map<InteractiveControl, ListenableFuture<Boolean>> createPromises = new HashMap<>();
+
+                for (Map.Entry<String, Set<InteractiveControl>> sceneMapping : groupControls(controls).entrySet()) {
+                    if (sceneMapping.getValue() != null) {
+                        ListenableFuture<Boolean> createPromise = create(sceneMapping.getKey(), sceneMapping.getValue());
+                        for (InteractiveControl control : sceneMapping.getValue()) {
+                            createPromises.put(control, createPromise);
+                        }
+                    }
                 }
-            });
-            return createPromises;
+                return createPromises;
+            }
         });
     }
 
@@ -190,9 +204,9 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    private CompletableFuture<Boolean> create(String sceneID, Collection<InteractiveControl> controls) {
+    private ListenableFuture<Boolean> create(String sceneID, Collection<InteractiveControl> controls) {
         if (sceneID == null || controls == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -227,7 +241,7 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>>> update(InteractiveControl ... controls) {
+    public ListenableFuture<Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>>> update(InteractiveControl ... controls) {
         return update(0, Arrays.asList(controls));
     }
 
@@ -259,7 +273,7 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>>> update(int priority, InteractiveControl ... controls) {
+    public ListenableFuture<Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>>> update(int priority, InteractiveControl ... controls) {
         return update(priority, Arrays.asList(controls));
     }
 
@@ -289,7 +303,7 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>>> update(Collection<InteractiveControl> controls) {
+    public ListenableFuture<Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>>> update(Collection<InteractiveControl> controls) {
         return update(0, controls);
     }
 
@@ -321,16 +335,21 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>>> update(int priority, Collection<InteractiveControl> controls) {
-        return CompletableFuture.supplyAsync(() -> {
-            Map<InteractiveControl, CompletableFuture<Set<InteractiveControl>>> updatePromises = new HashMap<>();
-            groupControls(controls).forEach((sceneId, interactiveControls) -> {
-                if (interactiveControls != null) {
-                    CompletableFuture<Set<InteractiveControl>> updatePromise = update(priority, sceneId, interactiveControls);
-                    interactiveControls.forEach(control -> updatePromises.put(control, updatePromise));
+    public ListenableFuture<Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>>> update(final int priority, final Collection<InteractiveControl> controls) {
+        return gameClient.getExecutorService().submit(new Callable<Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>>>() {
+            @Override
+            public Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>> call() throws Exception {
+                Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>> updatePromises = new HashMap<>();
+                for (Map.Entry<String, Set<InteractiveControl>> sceneMapping : groupControls(controls).entrySet()) {
+                    if (sceneMapping.getValue() != null) {
+                        ListenableFuture<? extends Set<InteractiveControl>> updatePromise = update(priority, sceneMapping.getKey(), sceneMapping.getValue());
+                        for (InteractiveControl control : sceneMapping.getValue()) {
+                            updatePromises.put(control, updatePromise);
+                        }
+                    }
                 }
-            });
-            return updatePromises;
+                return updatePromises;
+            }
         });
     }
 
@@ -371,9 +390,9 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    private CompletableFuture<Set<InteractiveControl>> update(int priority, String sceneID, Collection<InteractiveControl> controls) {
+    private ListenableFuture<? extends Set<InteractiveControl>> update(int priority, String sceneID, Collection<InteractiveControl> controls) {
         if (sceneID == null || controls == null) {
-            return CompletableFuture.completedFuture(Collections.emptySet());
+            return Futures.immediateFuture(new HashSet<InteractiveControl>());
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -409,7 +428,7 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Boolean>>> delete(InteractiveControl ... controls) {
+    public ListenableFuture<Map<InteractiveControl, ListenableFuture<Boolean>>> delete(InteractiveControl ... controls) {
         return delete(Arrays.asList(controls));
     }
 
@@ -439,16 +458,25 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Map<InteractiveControl, CompletableFuture<Boolean>>> delete(Collection<InteractiveControl> controls) {
-        return CompletableFuture.supplyAsync(() -> {
-            Map<InteractiveControl, CompletableFuture<Boolean>> deletePromises = new HashMap<>();
-            groupControls(controls).forEach((sceneId, interactiveControls) -> {
-                if (interactiveControls != null) {
-                    CompletableFuture<Boolean> deletePromise = delete(sceneId, interactiveControls.stream().map(InteractiveControl::getControlID).collect(Collectors.toSet()));
-                    interactiveControls.forEach(control -> deletePromises.put(control, deletePromise));
+    public ListenableFuture<Map<InteractiveControl, ListenableFuture<Boolean>>> delete(final Collection<InteractiveControl> controls) {
+        return gameClient.getExecutorService().submit(new Callable<Map<InteractiveControl, ListenableFuture<Boolean>>>() {
+            @Override
+            public Map<InteractiveControl, ListenableFuture<Boolean>> call() throws Exception {
+                Map<InteractiveControl, ListenableFuture<Boolean>> deletePromises = new HashMap<>();
+                for (Map.Entry<String, Set<InteractiveControl>> sceneMapping : groupControls(controls).entrySet()) {
+                    if (sceneMapping.getValue() != null) {
+                        Set<String> controlIds = new HashSet<>();
+                        for (InteractiveControl control : sceneMapping.getValue()) {
+                            controlIds.add(control.getControlID());
+                        }
+                        ListenableFuture<Boolean> deletePromise = delete(sceneMapping.getKey(), controlIds);
+                        for (InteractiveControl control : sceneMapping.getValue()) {
+                            deletePromises.put(control, deletePromise);
+                        }
+                    }
                 }
-            });
-            return deletePromises;
+                return deletePromises;
+            }
         });
     }
 
@@ -482,9 +510,9 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    private CompletableFuture<Boolean> delete(String sceneID, Collection<String> controlIDs) {
+    private ListenableFuture<Boolean> delete(String sceneID, Collection<String> controlIDs) {
         if (sceneID == null || controlIDs == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -505,6 +533,13 @@ public class ControlServiceProvider extends AbstractServiceProvider {
      * @since   2.0.0
      */
     private Map<String, Set<InteractiveControl>> groupControls(Collection<InteractiveControl> controls) {
-        return controls.stream().collect(Collectors.groupingBy(InteractiveControl::getSceneID, Collectors.toSet()));
+        Map<String, Set<InteractiveControl>> sceneMapping = new HashMap<>();
+        for (InteractiveControl control : controls) {
+            if (sceneMapping.get(control.getSceneID()) == null) {
+                sceneMapping.put(control.getSceneID(), new TreeSet<InteractiveControl>());
+            }
+            sceneMapping.get(control.getSceneID()).add(control);
+        }
+        return sceneMapping;
     }
 }

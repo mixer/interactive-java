@@ -1,6 +1,7 @@
 package com.mixer.interactive.services;
 
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
@@ -88,7 +89,7 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveScene>> getScenes() {
+    public ListenableFuture<Set<InteractiveScene>> getScenes() {
         return gameClient.using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_SCENES, EMPTY_JSON_OBJECT, PARAM_KEY_SCENES, SCENE_SET_TYPE);
     }
 

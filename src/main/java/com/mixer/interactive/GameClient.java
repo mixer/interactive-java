@@ -288,7 +288,7 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public ScheduledExecutorService getExecutorService() {
+    public ListeningScheduledExecutorService getExecutorService() {
         return executor;
     }
 
@@ -556,8 +556,12 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<CompressionScheme> setCompression(CompressionScheme ... schemes) {
-        return setCompression(Arrays.stream(schemes).map(CompressionScheme::toString).collect(Collectors.toList()));
+    public ListenableFuture<CompressionScheme> setCompression(CompressionScheme ... schemes) {
+        List<String> compressionSchemes = new ArrayList<>();
+        for (CompressionScheme scheme : schemes) {
+            compressionSchemes.add(scheme.toString());
+        }
+        return setCompression(compressionSchemes);
     }
 
     /**
@@ -582,7 +586,7 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<CompressionScheme> setCompression(String ... schemes) {
+    public ListenableFuture<CompressionScheme> setCompression(String ... schemes) {
         return setCompression(Arrays.asList(schemes));
     }
 
@@ -608,7 +612,7 @@ public class GameClient {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<CompressionScheme> setCompression(Collection<String> schemes) {
+    public ListenableFuture<CompressionScheme> setCompression(Collection<String> schemes) {
         JsonObject jsonParams = new JsonObject();
         List<String> compressionSchemes = new ArrayList<>();
         for (String scheme : schemes) {
@@ -618,10 +622,15 @@ public class GameClient {
         }
         jsonParams.add(PARAM_KEY_COMPRESSION_SCHEME, GSON.toJsonTree(compressionSchemes));
 
-        CompletableFuture<String> future = using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.SET_COMPRESSION, jsonParams, PARAM_KEY_COMPRESSION_SCHEME, String.class);
-        CompletableFuture<CompressionScheme> compressionFuture = future.thenApply(CompressionScheme::from);
-        compressionFuture.thenAcceptAsync(compressionScheme -> webSocketClient.setCompressionScheme(compressionScheme));
-        return compressionFuture;
+        ListenableFuture<String> future = using(RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.SET_COMPRESSION, jsonParams, PARAM_KEY_COMPRESSION_SCHEME, String.class);
+        return Futures.transform(future, new AsyncFunction<String, CompressionScheme>() {
+            @Override
+            public ListenableFuture<CompressionScheme> apply(String input) throws Exception {
+                CompressionScheme scheme = CompressionScheme.from(input);
+                webSocketClient.setCompressionScheme(scheme);
+                return Futures.immediateFuture(scheme);
+            }
+        });
     }
 
     /**

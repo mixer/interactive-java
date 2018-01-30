@@ -1,8 +1,7 @@
 package com.mixer.interactive.resources;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.mixer.interactive.GameClient;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
  * The interface <code>IInteractiveCreatable</code> defines methods for deleting a resource on the Interactive service.
@@ -24,5 +23,5 @@ public interface IInteractiveDeletable {
      *
      * @since   2.0.0
      */
-    CompletableFuture<Boolean> delete(GameClient gameClient);
+    ListenableFuture<Boolean> delete(GameClient gameClient);
 }
