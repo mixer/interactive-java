@@ -1,5 +1,7 @@
 package com.mixer.interactive.resources.transaction;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.mixer.interactive.GameClient;
 
 import java.util.concurrent.CompletableFuture;
@@ -54,9 +56,9 @@ public class InteractiveTransaction {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> capture(GameClient gameClient) {
+    public ListenableFuture<Boolean> capture(GameClient gameClient) {
         return gameClient != null
                 ? gameClient.using(TRANSACTION_SERVICE_PROVIDER).capture(transactionID)
-                : CompletableFuture.completedFuture(false);
+                : Futures.immediateFuture(false);
     }
 }

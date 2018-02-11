@@ -1,6 +1,8 @@
 package com.mixer.interactive.services;
 
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveException;
@@ -15,7 +17,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Provides all functionality relating to making requests and interpreting replies from the Interactive service
@@ -47,6 +50,20 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
     private static final String PARAM_KEY_FROM = "from";
     private static final String PARAM_KEY_HAS_MORE = "hasMore";
     private static final String PARAM_KEY_THRESHOLD = "threshold";
+
+    private static final Comparator<InteractiveParticipant> ALL_PARTICIPANT_COMPARATOR = new Comparator<InteractiveParticipant>() {
+        @Override
+        public int compare(InteractiveParticipant o1, InteractiveParticipant o2) {
+            return Long.compare(o1.getConnectedAt(), o2.getConnectedAt());
+        }
+    };
+
+    private static final Comparator<InteractiveParticipant> ACTIVE_PARTICIPANT_COMPARATOR = new Comparator<InteractiveParticipant>() {
+        @Override
+        public int compare(InteractiveParticipant o1, InteractiveParticipant o2) {
+            return Long.compare(o1.getLastInputAt(), o2.getLastInputAt());
+        }
+    };
 
     /**
      * Initializes a new <code>ParticipantServiceProvider</code>.
@@ -85,13 +102,16 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveParticipant>> getAllParticipants() {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return getParticipants(InteractiveMethod.GET_ALL_PARTICIPANTS, 0, Comparator.comparingLong(InteractiveParticipant::getConnectedAt));
-            }
-            catch (InteractiveException ex) {
-                return Collections.emptySet();
+    public ListenableFuture<Set<InteractiveParticipant>> getAllParticipants() {
+        return gameClient.getExecutorService().submit(new Callable<Set<InteractiveParticipant>>() {
+            @Override
+            public Set<InteractiveParticipant> call() {
+                try {
+                    return getParticipants(InteractiveMethod.GET_ALL_PARTICIPANTS, 0, ALL_PARTICIPANT_COMPARATOR);
+                }
+                catch (InteractiveException | ExecutionException | InterruptedException ex) {
+                    return new HashSet<>();
+                }
             }
         });
     }
@@ -126,13 +146,16 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveParticipant>> getActiveParticipants(long thresholdTimestamp) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return getParticipants(InteractiveMethod.GET_ACTIVE_PARTICIPANTS, thresholdTimestamp, Comparator.comparingLong(InteractiveParticipant::getLastInputAt));
-            }
-            catch (InteractiveException ex) {
-                return Collections.emptySet();
+    public ListenableFuture<? extends Set<InteractiveParticipant>> getActiveParticipants(final long thresholdTimestamp) {
+        return gameClient.getExecutorService().submit(new Callable<Set<InteractiveParticipant>>() {
+            @Override
+            public Set<InteractiveParticipant> call() {
+                try {
+                    return getParticipants(InteractiveMethod.GET_ACTIVE_PARTICIPANTS, thresholdTimestamp, ACTIVE_PARTICIPANT_COMPARATOR);
+                }
+                catch (InteractiveException | ExecutionException | InterruptedException ex) {
+                    return new HashSet<>();
+                }
             }
         });
     }
@@ -170,7 +193,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveParticipant>> update(InteractiveParticipant ... participants) {
+    public ListenableFuture<? extends Set<InteractiveParticipant>> update(InteractiveParticipant ... participants) {
         return update(0, participants);
     }
 
@@ -209,10 +232,10 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveParticipant>> update(int priority, InteractiveParticipant ... participants) {
+    public ListenableFuture<? extends Set<InteractiveParticipant>> update(int priority, InteractiveParticipant ... participants) {
         return participants != null
                 ? update(priority, Arrays.asList(participants))
-                : CompletableFuture.completedFuture(Collections.emptySet());
+                : Futures.immediateFuture(new HashSet<InteractiveParticipant>());
     }
 
     /**
@@ -248,7 +271,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveParticipant>> update(Collection<InteractiveParticipant> participants) {
+    public ListenableFuture<? extends Set<InteractiveParticipant>> update(Collection<InteractiveParticipant> participants) {
         return update(0, participants);
     }
 
@@ -287,9 +310,9 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveParticipant>> update(int priority, Collection<InteractiveParticipant> participants) {
+    public ListenableFuture<? extends Set<InteractiveParticipant>> update(int priority, Collection<InteractiveParticipant> participants) {
         if (participants == null) {
-            return CompletableFuture.completedFuture(Collections.emptySet());
+            return Futures.immediateFuture(new HashSet<InteractiveParticipant>());
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -324,7 +347,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    private Set<InteractiveParticipant> getParticipants(InteractiveMethod method, long initialMarker, Comparator<InteractiveParticipant> comparator) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException {
+    private Set<InteractiveParticipant> getParticipants(InteractiveMethod method, long initialMarker, Comparator<InteractiveParticipant> comparator) throws InteractiveReplyWithErrorException, InteractiveRequestNoReplyException, ExecutionException, InterruptedException {
 
         if (method != InteractiveMethod.GET_ALL_PARTICIPANTS && method != InteractiveMethod.GET_ACTIVE_PARTICIPANTS) {
             LOG.fatal("Illegal method specified (may only be one of 'getAllParticipants' or 'getActiveParticipants')");
@@ -341,7 +364,7 @@ public class ParticipantServiceProvider extends AbstractServiceProvider {
             jsonObject.addProperty(property, marker);
             int nextPacketId = gameClient.using(GameClient.RPC_SERVICE_PROVIDER).claimNextPacketId();
             MethodPacket requestPacket = new MethodPacket(nextPacketId, method, jsonObject);
-            ReplyPacket replyPacket = gameClient.using(GameClient.RPC_SERVICE_PROVIDER).send(requestPacket).join();
+            ReplyPacket replyPacket = gameClient.using(GameClient.RPC_SERVICE_PROVIDER).send(requestPacket).get();
             if (replyPacket.hasError()) {
                 throw new InteractiveReplyWithErrorException(requestPacket, replyPacket.getError());
             }

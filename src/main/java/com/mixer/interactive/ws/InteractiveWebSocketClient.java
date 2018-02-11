@@ -77,6 +77,9 @@ public class InteractiveWebSocketClient extends WebSocketClient {
      */
     private static final JsonParser JSON_PARSER = new JsonParser();
 
+    /**
+     * TODO Finish Javadoc
+     */
     private static final Comparator<InteractivePacket> SEQUENCE_COMPARATOR = new Comparator<InteractivePacket>() {
         @Override
         public int compare(InteractivePacket o1, InteractivePacket o2) {

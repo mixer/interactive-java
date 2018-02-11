@@ -71,7 +71,7 @@ public class InteractiveSceneAdapter implements JsonDeserializer<InteractiveScen
             for (JsonElement jsonElement : jsonObject.get(PARAM_KEY_CONTROLS).getAsJsonArray()) {
                 if (jsonElement.isJsonObject()) {
                     jsonElement.getAsJsonObject().addProperty(PARAM_KEY_SCENE_ID, sceneID);
-                    controls.add(context.deserialize(jsonElement, InteractiveControl.class));
+                    controls.add((InteractiveControl) context.deserialize(jsonElement, InteractiveControl.class));
                 }
             }
         }

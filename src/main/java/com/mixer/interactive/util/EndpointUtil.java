@@ -4,6 +4,9 @@ import com.google.gson.reflect.TypeToken;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveNoHostsFoundException;
 import com.mixer.interactive.resources.core.InteractiveHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -70,12 +73,15 @@ public class EndpointUtil {
 
         List<InteractiveHost> interactiveHosts;
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            interactiveHosts = httpClient.execute(new HttpGet(INTERACTIVE_HOST_DISCOVERY_ENDPOINT), response -> {
-                int status = response.getStatusLine().getStatusCode();
-                if (status >= 200 && status < 300) {
-                    return GameClient.GSON.fromJson(EntityUtils.toString(response.getEntity()), INTERACTIVE_HOST_LIST_TYPE);
-                }
-                return Collections.emptyList();
+            interactiveHosts = httpClient.execute(new HttpGet(INTERACTIVE_HOST_DISCOVERY_ENDPOINT), new ResponseHandler<List<InteractiveHost>>() {
+                @Override
+                public List<InteractiveHost> handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
+                        int status = response.getStatusLine().getStatusCode();
+                        if (status >= 200 && status < 300) {
+                            return GameClient.GSON.fromJson(EntityUtils.toString(response.getEntity()), INTERACTIVE_HOST_LIST_TYPE);
+                        }
+                        return Collections.emptyList();
+                    }
             });
         }
         catch (IOException ex) {

@@ -6,7 +6,7 @@
 
     <groupId>com.mixer</groupId>
     <artifactId>mixer-interactive-j7-api</artifactId>
-    <version>2.1.1</version>
+    <version>2.1.1-SNAPSHOT</version>
 
     <licenses>
         <license>

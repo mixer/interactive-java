@@ -2,6 +2,10 @@ package com.mixer.interactive.resources.participant;
 
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hashing;
+import com.google.common.hash.PrimitiveSink;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.protocol.InteractiveMethod;
@@ -11,7 +15,7 @@ import com.mixer.interactive.resources.group.InteractiveGroup;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
+import java.util.Set;
 
 /**
  * A <code>InteractiveParticipant</code> represents a participant using the Interactive service.
@@ -308,13 +312,18 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
      * @since   1.0.0
      */
     @Override
-    public CompletableFuture<Boolean> update(GameClient gameClient) {
+    public ListenableFuture<Boolean> update(GameClient gameClient) {
         if (gameClient == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
-        return gameClient.using(GameClient.PARTICIPANT_SERVICE_PROVIDER).update(this)
-                .thenCompose(participants -> CompletableFuture.supplyAsync(() -> syncIfEqual(participants)));
+        return Futures.transform(gameClient.using(GameClient.PARTICIPANT_SERVICE_PROVIDER).update(this),
+                new AsyncFunction<Set<InteractiveParticipant>, Boolean>() {
+                    @Override
+                    public ListenableFuture<Boolean> apply(Set<InteractiveParticipant> input) throws Exception {
+                        return Futures.immediateFuture(syncIfEqual(input));
+                    }
+                });
     }
 
     /**
@@ -343,9 +352,12 @@ public class InteractiveParticipant extends InteractiveResource<InteractiveParti
                 .putString(username, StandardCharsets.UTF_8)
                 .putLong(lastInputAt)
                 .putLong(connectedAt)
-                .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
-                    if (from != null && !from.isJsonNull()) {
-                        into.putString(from.toString(), StandardCharsets.UTF_8);
+                .putObject(meta, new Funnel<JsonElement>() {
+                    @Override
+                    public void funnel(JsonElement from, PrimitiveSink into) {
+                        if (from != null && !from.isJsonNull()) {
+                            into.putString(from.toString(), StandardCharsets.UTF_8);
+                        }
                     }
                 })
                 .hash()

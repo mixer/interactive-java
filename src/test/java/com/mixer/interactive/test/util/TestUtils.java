@@ -166,7 +166,9 @@ public class TestUtils {
                 ? ((JsonObject) jsonElement).get(PROPERTY_PARTICIPANT_TOKENS).getAsString()
                 : "[\"foo\", \"foo\", \"foo\"]");
         List<String> tokens = new Gson().fromJson(encodedTokens, new TypeToken<List<String>>(){}.getType());
-        tokens.forEach(token -> TEST_PARTICIPANTS.add(new InteractiveTestParticipant(token)));
+        for (String token : tokens) {
+            TEST_PARTICIPANTS.add(new InteractiveTestParticipant(token));
+        }
     }
 
     /**

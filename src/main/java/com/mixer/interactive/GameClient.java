@@ -356,32 +356,36 @@ public class GameClient {
      *
      * @since   2.1.0
      */
-    public ListenableFuture<Boolean> connect(String authToken, String shareCode) {
-        CompletableFuture<Boolean> result = new CompletableFuture<>();
+    public ListenableFuture<Boolean> connect(final String authToken, final String shareCode) {
+        final SettableFuture<Boolean> result = SettableFuture.create();
         ArrayList<InteractiveHost> hosts = new ArrayList<>();
         try {
             hosts.addAll(EndpointUtil.getInteractiveHosts());
-        } catch (InteractiveNoHostsFoundException e) {
+        }
+        catch (InteractiveNoHostsFoundException e) {
             return Futures.immediateFailedFuture(e);
         }
-        Iterator<InteractiveHost> hostIterator = hosts.iterator();
+        final Iterator<InteractiveHost> hostIterator = hosts.iterator();
         if (hostIterator.hasNext()) {
-            connectTo(authToken, shareCode, hostIterator.next().getAddress()).whenCompleteAsync((r, t) -> {
-                if (t == null) {
-                    result.complete(r);
+            Futures.addCallback(connectTo(authToken, shareCode, hostIterator.next().getAddress()), new FutureCallback<Boolean>() {
+                @Override
+                public void onSuccess(Boolean connectResult) {
+                    result.set(connectResult);
                 }
-                else {
+
+                @Override
+                public void onFailure(Throwable t) {
                     while (hostIterator.hasNext()) {
                         try {
-                            r = connectTo(authToken, shareCode, hostIterator.next().getAddress()).join();
-                            result.complete(r);
+                            boolean r = connectTo(authToken, shareCode, hostIterator.next().getAddress()).get();
+                            result.set(r);
                             return;
                         }
                         catch (Throwable next) {
                             t.addSuppressed(next);
                         }
                     }
-                    result.completeExceptionally(t);
+                    result.setException(t);
                 }
             });
         }

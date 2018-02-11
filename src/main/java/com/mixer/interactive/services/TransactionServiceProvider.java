@@ -1,5 +1,7 @@
 package com.mixer.interactive.services;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveReplyWithErrorException;
@@ -71,9 +73,9 @@ public class TransactionServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> capture(String transactionID) {
+    public ListenableFuture<Boolean> capture(String transactionID) {
         if (transactionID == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
         JsonObject jsonParams = new JsonObject();

@@ -2,6 +2,7 @@ package com.mixer.interactive.test.util;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -20,7 +21,6 @@ import org.java_websocket.handshake.ServerHandshake;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -53,9 +53,9 @@ public class InteractiveTestParticipantClient extends WebSocketClient {
     private static final Type INTERACTIVE_PACKET_SET_TYPE = new TypeToken<Set<InteractivePacket>>(){}.getType();
 
     /**
-     * A <code>CompletableFuture</code> promise holding the result of a connection attempt using this websocket client
+     * A <code>ListenableFuture</code> promise holding the result of a connection attempt using this websocket client
      */
-    private CompletableFuture<Boolean> connectionPromise;
+    private SettableFuture<Boolean> connectionPromise;
 
     /**
      * The user id for the participant that owns this websocket client
@@ -115,24 +115,24 @@ public class InteractiveTestParticipantClient extends WebSocketClient {
      *
      * @since   2.1.0
      */
-    public CompletableFuture<Boolean> getConnectionPromise() {
+    public SettableFuture<Boolean> getConnectionPromise() {
         return connectionPromise;
     }
 
     /**
-     * Sets the <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     * Sets the <code>ListenableFuture</code> promise holding the result of a connection attempt using this
      * websocket client.
      *
      * @param   connectionPromise
      *          The <code>CompletableFuture</code> promise holding the result of a connection attempt using this
      *          websocket client.
      *
-     * @return  The <code>CompletableFuture</code> promise holding the result of a connection attempt using this
+     * @return  The <code>ListenableFuture</code> promise holding the result of a connection attempt using this
      *          websocket client.
      *
      * @since   2.1.0
      */
-    public CompletableFuture<Boolean> setConnectionPromise(CompletableFuture<Boolean> connectionPromise) {
+    public SettableFuture<Boolean> setConnectionPromise(SettableFuture<Boolean> connectionPromise) {
         this.connectionPromise = connectionPromise;
         return this.connectionPromise;
     }
@@ -192,7 +192,10 @@ public class InteractiveTestParticipantClient extends WebSocketClient {
         List<InteractivePacket> packets = new ArrayList<>();
         JsonElement jsonObject = JSON_PARSER.parse(message);
         if (jsonObject.isJsonArray()) {
-            Collections.addAll(packets, GameClient.GSON.fromJson(jsonObject, INTERACTIVE_PACKET_SET_TYPE));
+            Set<InteractivePacket> receivedPackets = GameClient.GSON.fromJson(jsonObject, INTERACTIVE_PACKET_SET_TYPE);
+            for (InteractivePacket packet : receivedPackets) {
+                packets.add(packet);
+            }
         }
         else {
             Collections.addAll(packets, GameClient.GSON.fromJson(jsonObject, InteractivePacket.class));
@@ -211,7 +214,7 @@ public class InteractiveTestParticipantClient extends WebSocketClient {
     public void onClose(int code, String reason, boolean closedRemotely) {
         LOG.debug(String.format("Test participant '%s' disconnected (code: %s, reason: %s)", userId, code, reason));
         if (connectionPromise != null && !connectionPromise.isDone()) {
-            connectionPromise.completeExceptionally(new InteractiveConnectionException(getURI(), code, reason));
+            connectionPromise.setException(new InteractiveConnectionException(getURI(), code, reason));
         }
     }
 
@@ -241,7 +244,7 @@ public class InteractiveTestParticipantClient extends WebSocketClient {
         for (InteractivePacket packet : receivedPackets) {
             if (packet instanceof MethodPacket && ((MethodPacket) packet).getMethod() != null && ((MethodPacket) packet).getMethod() == InteractiveMethod.HELLO) {
                 if (connectionPromise != null && !connectionPromise.isDone()) {
-                    connectionPromise.complete(true);
+                    connectionPromise.set(true);
                 }
             }
         }

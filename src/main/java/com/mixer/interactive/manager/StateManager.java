@@ -1,6 +1,8 @@
 package com.mixer.interactive.manager;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.event.connection.ConnectionClosedEvent;
 import com.mixer.interactive.event.connection.ConnectionEstablishedEvent;
@@ -120,20 +122,23 @@ public class StateManager {
             long sumOfDeltas = 0;
             int successfulSamples = 0;
             for (int i = 0; i < SAMPLE_RATE; i++) {
-                Instant transmitTime = Instant.now();
+                long transmitTime = System.nanoTime();
                 try {
-                    sumOfDeltas += gameClient.getTime().thenApply(serverTime -> {
-                        Instant receiveTime = Instant.now();
-                        long rtt = receiveTime.toEpochMilli() - transmitTime.toEpochMilli();
-                        return serverTime - rtt / 2 - transmitTime.toEpochMilli();
-                    }).get();
+                    long serverTime = gameClient.getTime().get();
+                    long receiveTime = System.nanoTime();
+                    long rtt = receiveTime - transmitTime;
+                    sumOfDeltas += serverTime - rtt / 2 - transmitTime;
                     successfulSamples++;
                 }
                 catch (InterruptedException | ExecutionException e) {
                     LOG.error(e);
                 }
             }
-            timeAdjustment = Math.floorDiv(sumOfDeltas, successfulSamples);
+
+            timeAdjustment = sumOfDeltas / successfulSamples;
+            if ((sumOfDeltas ^ successfulSamples) < 0 && (timeAdjustment * successfulSamples != sumOfDeltas)) {
+                timeAdjustment--;
+            }
         }
     }
 }

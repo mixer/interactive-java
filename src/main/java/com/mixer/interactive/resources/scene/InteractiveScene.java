@@ -2,6 +2,10 @@ package com.mixer.interactive.resources.scene;
 
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hashing;
+import com.google.common.hash.PrimitiveSink;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.protocol.InteractiveMethod;
@@ -18,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 import static com.mixer.interactive.GameClient.SCENE_SERVICE_PROVIDER;
 
@@ -244,13 +247,18 @@ public class InteractiveScene
      * @since   2.0.0
      */
     @Override
-    public CompletableFuture<Boolean> create(GameClient gameClient) {
+    public ListenableFuture<Boolean> create(GameClient gameClient) {
         if (gameClient == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
-        return gameClient.using(SCENE_SERVICE_PROVIDER).create(this)
-                .thenCompose(scenes -> CompletableFuture.supplyAsync(() -> syncIfEqual(scenes)));
+        return Futures.transform(gameClient.using(SCENE_SERVICE_PROVIDER).create(this),
+                new AsyncFunction<Set<InteractiveScene>, Boolean>() {
+                    @Override
+                    public ListenableFuture<Boolean> apply(Set<InteractiveScene> input) {
+                        return Futures.immediateFuture(syncIfEqual(input));
+                    }
+                });
     }
 
     /**
@@ -267,13 +275,18 @@ public class InteractiveScene
      * @since   2.0.0
      */
     @Override
-    public CompletableFuture<Boolean> update(GameClient gameClient) {
+    public ListenableFuture<Boolean> update(GameClient gameClient) {
         if (gameClient == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
-        return gameClient.using(SCENE_SERVICE_PROVIDER).update(this)
-                .thenCompose(scenes -> CompletableFuture.supplyAsync(() -> syncIfEqual(scenes)));
+        return Futures.transform(gameClient.using(SCENE_SERVICE_PROVIDER).update(this),
+                new AsyncFunction<Set<InteractiveScene>, Boolean>() {
+                    @Override
+                    public ListenableFuture<Boolean> apply(Set<InteractiveScene> input) {
+                        return Futures.immediateFuture(syncIfEqual(input));
+                    }
+                });
     }
 
     /**
@@ -290,7 +303,7 @@ public class InteractiveScene
      * @since   1.0.0
      */
     @Override
-    public CompletableFuture<Boolean> delete(GameClient gameClient) {
+    public ListenableFuture<Boolean> delete(GameClient gameClient) {
         return delete(gameClient, DEFAULT_SCENE);
     }
 
@@ -308,10 +321,10 @@ public class InteractiveScene
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> delete(GameClient gameClient, String reassignSceneID) {
+    public ListenableFuture<Boolean> delete(GameClient gameClient, String reassignSceneID) {
         return gameClient != null
                 ? gameClient.using(SCENE_SERVICE_PROVIDER).delete(sceneID, reassignSceneID)
-                : CompletableFuture.completedFuture(false);
+                : Futures.immediateFuture(false);
     }
 
     /**
@@ -333,14 +346,22 @@ public class InteractiveScene
     public int hashCode() {
         return Hashing.md5().newHasher()
                 .putString(sceneID != null ? sceneID : "", StandardCharsets.UTF_8)
-                .putObject(controls, (Funnel<Set<InteractiveControl>>) (interactiveControls, into) -> {
-                    if (interactiveControls != null) {
-                        interactiveControls.forEach(control -> into.putInt(control.hashCode()));
+                .putObject(controls, new Funnel<Set<InteractiveControl>>() {
+                    @Override
+                    public void funnel(Set<InteractiveControl> interactiveControls, PrimitiveSink into) {
+                        if (interactiveControls != null) {
+                            for (InteractiveControl control: interactiveControls) {
+                                into.putInt(control.hashCode());
+                            }
+                        }
                     }
                 })
-                .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
-                    if (from != null && !from.isJsonNull()) {
-                        into.putString(from.toString(), StandardCharsets.UTF_8);
+                .putObject(meta, new Funnel<JsonElement>() {
+                    @Override
+                    public void funnel(JsonElement from, PrimitiveSink into) {
+                        if (from != null && !from.isJsonNull()) {
+                            into.putString(from.toString(), StandardCharsets.UTF_8);
+                        }
                     }
                 })
                 .hash()

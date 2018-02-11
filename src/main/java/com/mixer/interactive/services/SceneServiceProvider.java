@@ -1,6 +1,7 @@
 package com.mixer.interactive.services;
 
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -11,11 +12,7 @@ import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.resources.scene.InteractiveScene;
 
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 
 import static com.mixer.interactive.GameClient.RPC_SERVICE_PROVIDER;
 
@@ -129,8 +126,8 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveScene>> create(InteractiveScene ... scenes) {
-        return create(scenes != null ? Arrays.asList(scenes) : Collections.emptySet());
+    public ListenableFuture<? extends Set<InteractiveScene>> create(InteractiveScene ... scenes) {
+        return create(scenes != null ? Arrays.asList(scenes) : new HashSet<InteractiveScene>());
     }
 
     /**
@@ -169,9 +166,9 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveScene>> create(Collection<InteractiveScene> scenes) {
+    public ListenableFuture<? extends Set<InteractiveScene>> create(Collection<InteractiveScene> scenes) {
         if (scenes == null) {
-            return CompletableFuture.completedFuture(Collections.emptySet());
+            return Futures.immediateFuture(new HashSet<InteractiveScene>());
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -210,7 +207,7 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveScene>> update(InteractiveScene ... scenes) {
+    public ListenableFuture<? extends Set<InteractiveScene>> update(InteractiveScene ... scenes) {
         return update(0, scenes);
     }
 
@@ -247,8 +244,8 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveScene>> update(int priority, InteractiveScene ... scenes) {
-        return update(priority, scenes != null ? Arrays.asList(scenes) : Collections.emptySet());
+    public ListenableFuture<? extends Set<InteractiveScene>> update(int priority, InteractiveScene ... scenes) {
+        return update(priority, scenes != null ? Arrays.asList(scenes) : new HashSet<InteractiveScene>());
     }
 
     /**
@@ -282,7 +279,7 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveScene>> update(Collection<InteractiveScene> scenes) {
+    public ListenableFuture<? extends Set<InteractiveScene>> update(Collection<InteractiveScene> scenes) {
         return update(0, scenes);
     }
 
@@ -319,9 +316,9 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveScene>> update(int priority, Collection<InteractiveScene> scenes) {
+    public ListenableFuture<? extends Set<InteractiveScene>> update(int priority, Collection<InteractiveScene> scenes) {
         if (scenes == null) {
-            return CompletableFuture.completedFuture(Collections.emptySet());
+            return Futures.immediateFuture(new HashSet<InteractiveScene>());
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -358,7 +355,7 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> delete(String sceneID) {
+    public ListenableFuture<Boolean> delete(String sceneID) {
         return delete(sceneID, DEFAULT_VALUE);
     }
 
@@ -393,9 +390,9 @@ public class SceneServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> delete(String sceneID, String reassignSceneID) {
+    public ListenableFuture<Boolean> delete(String sceneID, String reassignSceneID) {
         if (sceneID == null || reassignSceneID == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
         JsonObject jsonParams = new JsonObject();

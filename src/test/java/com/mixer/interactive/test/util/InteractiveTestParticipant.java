@@ -1,11 +1,15 @@
 package com.mixer.interactive.test.util;
 
+import com.google.common.util.concurrent.*;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.exception.InteractiveConnectionException;
 import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.protocol.MethodPacket;
 import com.mixer.interactive.resources.participant.InteractiveParticipant;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -19,9 +23,7 @@ import java.net.URI;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,9 +46,9 @@ public class InteractiveTestParticipant {
     private static final Random RANDOM = new Random();
 
     /**
-     * Thread executor service for creating <code>CompletableFutures</code>
+     * Thread executor service for creating <code>ListenableFutures</code>
      */
-    private final ScheduledExecutorService executor;
+    private final ListeningScheduledExecutorService executor;
 
     /**
      * Authentication token for the test participant
@@ -76,7 +78,7 @@ public class InteractiveTestParticipant {
      * @since   2.1.0
      */
     public InteractiveTestParticipant(String token) {
-        executor = Executors.newScheduledThreadPool(1);
+        executor = MoreExecutors.listeningDecorator(Executors.newScheduledThreadPool(1));
         this.token = token;
     }
 
@@ -100,23 +102,24 @@ public class InteractiveTestParticipant {
      *
      * @since   2.1.0
      */
-    public CompletableFuture<Boolean> connect() {
-        CompletableFuture<Boolean> connectionPromise = new CompletableFuture<>();
+    public ListenableFuture<Boolean> connect() {
         try {
             connectToInteractive();
         }
         catch (InteractiveConnectionException e) {
-            connectionPromise.completeExceptionally(e);
-            return connectionPromise;
+            return Futures.immediateFailedFuture(e);
         }
 
-        executor.schedule(() -> {
-            if (webSocketClient != null && webSocketClient.getConnectionPromise() != null) {
-                if (webSocketClient.isOpen()) {
-                    webSocketClient.getConnectionPromise().complete(true);
-                }
-                else {
-                    webSocketClient.getConnectionPromise().completeExceptionally(new InteractiveConnectionException("Test participant connection attempt timed out after 15 seconds"));
+        executor.schedule(new Runnable() {
+            @Override
+            public void run() {
+                if (webSocketClient != null && webSocketClient.getConnectionPromise() != null) {
+                    if (webSocketClient.isOpen()) {
+                        webSocketClient.getConnectionPromise().set(true);
+                    }
+                    else {
+                        webSocketClient.getConnectionPromise().setException(new InteractiveConnectionException("Test participant connection attempt timed out after 15 seconds"));
+                    }
                 }
             }
         }, 15, TimeUnit.SECONDS);
@@ -132,17 +135,34 @@ public class InteractiveTestParticipant {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Void> disconnect() {
-        return CompletableFuture.runAsync(() -> {
-            if (isConnected()) {
-                try {
-                    webSocketClient.closeBlocking();
-                }
-                catch (InterruptedException e) {
-                    LOG.error(e.getMessage(), e);
-                }
-                finally {
-                    webSocketClient = null;
+    public ListenableFuture<?> disconnect() {
+//        return CompletableFuture.runAsync(() -> {
+//            if (isConnected()) {
+//                try {
+//                    webSocketClient.closeBlocking();
+//                }
+//                catch (InterruptedException e) {
+//                    LOG.error(e.getMessage(), e);
+//                }
+//                finally {
+//                    webSocketClient = null;
+//                }
+//            }
+//        });
+
+        return executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                if (isConnected()) {
+                    try {
+                        webSocketClient.closeBlocking();
+                    }
+                    catch (InterruptedException e) {
+                        LOG.error(e.getMessage(), e);
+                    }
+                    finally {
+                        webSocketClient = null;
+                    }
                 }
             }
         });
@@ -221,7 +241,7 @@ public class InteractiveTestParticipant {
                 sslContext.init(null, null, null);
                 webSocketClient.setSocket(sslContext.getSocketFactory().createSocket());
             }
-            webSocketClient.setConnectionPromise(new CompletableFuture<>());
+            webSocketClient.setConnectionPromise(SettableFuture.<Boolean>create());
             webSocketClient.connect();
         }
         catch (NoSuchAlgorithmException | IOException | KeyManagementException e) {
@@ -247,13 +267,16 @@ public class InteractiveTestParticipant {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet channelInfoGet = new HttpGet(URI.create(TestUtils.API_BASE_URL + "interactive/" + TestUtils.CHANNEL_ID));
             channelInfoGet.addHeader("Authorization", TestUtils.OAUTH_BEARER_TOKEN.startsWith("XBL3.0") ? token : "Bearer " + token);
-            channelResponse = httpClient.execute(channelInfoGet, response -> {
-                int status = response.getStatusLine().getStatusCode();
-                if (status >= 200 && status < 300) {
-                    String entity = EntityUtils.toString(response.getEntity());
-                    return GameClient.GSON.fromJson(entity, ChannelResponse.class);
+            channelResponse = httpClient.execute(channelInfoGet, new ResponseHandler<ChannelResponse>() {
+                @Override
+                public ChannelResponse handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
+                    int status = response.getStatusLine().getStatusCode();
+                    if (status >= 200 && status < 300) {
+                        String entity = EntityUtils.toString(response.getEntity());
+                        return GameClient.GSON.fromJson(entity, ChannelResponse.class);
+                    }
+                    return null;
                 }
-                return null;
             });
         }
         catch (IOException ex) {

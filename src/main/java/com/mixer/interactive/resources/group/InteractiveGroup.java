@@ -2,6 +2,10 @@ package com.mixer.interactive.resources.group;
 
 import com.google.common.hash.Funnel;
 import com.google.common.hash.Hashing;
+import com.google.common.hash.PrimitiveSink;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.protocol.InteractiveMethod;
@@ -15,7 +19,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
+import java.util.Set;
 
 import static com.mixer.interactive.GameClient.GROUP_SERVICE_PROVIDER;
 
@@ -211,9 +215,9 @@ public class InteractiveGroup
      * @since   2.0.0
      */
     @Override
-    public CompletableFuture<Boolean> create(GameClient gameClient) {
+    public ListenableFuture<Boolean> create(GameClient gameClient) {
         if (gameClient == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
         return gameClient.using(GROUP_SERVICE_PROVIDER).create(this);
@@ -233,13 +237,18 @@ public class InteractiveGroup
      * @since   2.0.0
      */
     @Override
-    public CompletableFuture<Boolean> update(GameClient gameClient) {
+    public ListenableFuture<Boolean> update(GameClient gameClient) {
         if (gameClient == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
-        return gameClient.using(GROUP_SERVICE_PROVIDER).update(this)
-                .thenCompose(groups -> CompletableFuture.supplyAsync(() -> syncIfEqual(groups)));
+        return Futures.transform(gameClient.using(GROUP_SERVICE_PROVIDER).update(this),
+                new AsyncFunction<Set<InteractiveGroup>, Boolean>() {
+                    @Override
+                    public ListenableFuture<Boolean> apply(Set<InteractiveGroup> input) {
+                        return Futures.immediateFuture(syncIfEqual(input));
+                    }
+                });
     }
 
     /**
@@ -256,7 +265,7 @@ public class InteractiveGroup
      * @since   1.0.0
      */
     @Override
-    public CompletableFuture<Boolean> delete(GameClient gameClient) {
+    public ListenableFuture<Boolean> delete(GameClient gameClient) {
         return delete(gameClient, DEFAULT_GROUP);
     }
 
@@ -274,10 +283,10 @@ public class InteractiveGroup
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> delete(GameClient gameClient, String reassignGroupID) {
+    public ListenableFuture<Boolean> delete(GameClient gameClient, String reassignGroupID) {
         return (gameClient != null)
                 ? gameClient.using(GROUP_SERVICE_PROVIDER).delete(groupID, reassignGroupID)
-                : CompletableFuture.completedFuture(false);
+                : Futures.immediateFuture(false);
     }
 
     /**
@@ -300,9 +309,12 @@ public class InteractiveGroup
         return Hashing.md5().newHasher()
                 .putString(groupID, StandardCharsets.UTF_8)
                 .putString(sceneID, StandardCharsets.UTF_8)
-                .putObject(meta, (Funnel<JsonElement>) (from, into) -> {
-                    if (from != null && !from.isJsonNull()) {
-                        into.putString(from.toString(), StandardCharsets.UTF_8);
+                .putObject(meta, new Funnel<JsonElement>() {
+                    @Override
+                    public void funnel(JsonElement from, PrimitiveSink into) {
+                        if (from != null && !from.isJsonNull()) {
+                            into.putString(from.toString(), StandardCharsets.UTF_8);
+                        }
                     }
                 })
                 .hash()

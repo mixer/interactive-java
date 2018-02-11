@@ -18,7 +18,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 import static com.mixer.interactive.GameClient.CONTROL_SERVICE_PROVIDER;
 
@@ -448,15 +447,17 @@ public abstract class InteractiveControl<T extends InteractiveResource<T>>
             return Futures.immediateFuture(false);
         }
 
-        return gameClient.using(CONTROL_SERVICE_PROVIDER).create(this)
-                .thenCompose(promiseMap -> {
-                    for (InteractiveControl control : promiseMap.keySet()) {
-                        if (getControlID().equals(control.getControlID())) {
-                            return promiseMap.get(control);
-                        }
+        return Futures.transform(gameClient.using(CONTROL_SERVICE_PROVIDER).create(this), new AsyncFunction<Map<InteractiveControl,ListenableFuture<Boolean>>, Boolean>() {
+            @Override
+            public ListenableFuture<Boolean> apply(Map<InteractiveControl, ListenableFuture<Boolean>> input) throws Exception {
+                for (InteractiveControl control : input.keySet()) {
+                    if (getControlID().equals(control.getControlID())) {
+                        return input.get(control);
                     }
-                    return CompletableFuture.completedFuture(false);
-                });
+                }
+                return Futures.immediateFuture(false);
+            }
+        });
     }
 
     /**
@@ -475,20 +476,23 @@ public abstract class InteractiveControl<T extends InteractiveResource<T>>
             return Futures.immediateFuture(false);
         }
 
-//        return gameClient.using(CONTROL_SERVICE_PROVIDER).update(Collections.singletonList(this))
-//                .thenCompose(updatePromises -> {
-//                    for (InteractiveControl control : updatePromises.keySet()) {
-//                        if (getControlID().equals(control.getControlID())) {
-//                            return updatePromises.get(control);
-//                        }
-//                    }
-//                    return CompletableFuture.supplyAsync(Collections::emptySet);
-//                })
-//                .thenCompose(updatedControls -> CompletableFuture.supplyAsync(() -> syncIfEqual(updatedControls)));
-        return Futures.transform(gameClient.using(CONTROL_SERVICE_PROVIDER).update(this), new AsyncFunction<Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>>, Boolean>() {
+        ListenableFuture<? extends Set<InteractiveControl>> updatePromise = Futures.transform(gameClient.using(CONTROL_SERVICE_PROVIDER).update(this), new AsyncFunction<Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>>, HashSet<InteractiveControl>>() {
+                    @Override
+                    public ListenableFuture<HashSet<InteractiveControl>> apply(Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>> updatePromises) {
+                        HashSet<InteractiveControl> controlSet = new HashSet<>();
+                        for (InteractiveControl control : updatePromises.keySet()) {
+                            if (getControlID().equals(control.getControlID())) {
+                                controlSet.addAll((Collection<? extends InteractiveControl>) updatePromises.get(control));
+                                return Futures.immediateFuture(controlSet);
+                            }
+                        }
+                        return Futures.immediateFuture(controlSet);
+                    }
+                });
+        return Futures.transform(updatePromise, new AsyncFunction<Set<InteractiveControl>, Boolean>() {
             @Override
-            public ListenableFuture<Boolean> apply(Map<InteractiveControl, ListenableFuture<? extends Set<InteractiveControl>>> input) throws Exception {
-                return null;
+            public ListenableFuture<Boolean> apply(Set<InteractiveControl> input) {
+                return Futures.immediateFuture(syncIfEqual(input));
             }
         });
     }
@@ -504,20 +508,22 @@ public abstract class InteractiveControl<T extends InteractiveResource<T>>
      *
      * @since   2.0.0
      */
-    public CompletableFuture<Boolean> delete(GameClient gameClient) {
+    public ListenableFuture<Boolean> delete(GameClient gameClient) {
         if (gameClient == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
-        return gameClient.using(CONTROL_SERVICE_PROVIDER).delete(this)
-                .thenCompose(promiseMap -> {
-                    for (InteractiveControl control : promiseMap.keySet()) {
-                        if (getControlID().equals(control.getControlID())) {
-                            return promiseMap.get(control);
-                        }
+        return Futures.transform(gameClient.using(CONTROL_SERVICE_PROVIDER).delete(this), new AsyncFunction<Map<InteractiveControl, ListenableFuture<Boolean>>, Boolean>() {
+            @Override
+            public ListenableFuture<Boolean> apply(Map<InteractiveControl, ListenableFuture<Boolean>> input) {
+                for (InteractiveControl control : input.keySet()) {
+                    if (getControlID().equals(control.getControlID())) {
+                        return input.get(control);
                     }
-                    return CompletableFuture.completedFuture(false);
-                });
+                }
+                return Futures.immediateFuture(false);
+            }
+        });
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.mixer.interactive.services;
 
 import com.google.common.reflect.TypeToken;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
@@ -10,11 +12,7 @@ import com.mixer.interactive.protocol.InteractiveMethod;
 import com.mixer.interactive.resources.group.InteractiveGroup;
 
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 
 /**
  * Provides all functionality relating to making requests and interpreting replies from the Interactive service
@@ -87,7 +85,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveGroup>> getGroups() {
+    public ListenableFuture<? extends Set<InteractiveGroup>> getGroups() {
         return gameClient.using(GameClient.RPC_SERVICE_PROVIDER).makeRequest(InteractiveMethod.GET_GROUPS, EMPTY_JSON_OBJECT, PARAM_KEY_GROUPS, GROUP_SET_TYPE);
     }
 
@@ -120,8 +118,8 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> create(InteractiveGroup ... groups) {
-        return create(groups != null ? Arrays.asList(groups) : Collections.emptyList());
+    public ListenableFuture<Boolean> create(InteractiveGroup ... groups) {
+        return create(groups != null ? Arrays.asList(groups) : new ArrayList<InteractiveGroup>());
     }
 
     /**
@@ -153,9 +151,9 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> create(Collection<InteractiveGroup> groups) {
+    public ListenableFuture<Boolean> create(Collection<InteractiveGroup> groups) {
         if (groups == null) {
-            return CompletableFuture.completedFuture(true);
+            return Futures.immediateFuture(true);
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -194,7 +192,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveGroup>> update(InteractiveGroup ... groups) {
+    public ListenableFuture<? extends Set<InteractiveGroup>> update(InteractiveGroup ... groups) {
         return update(0, groups);
     }
 
@@ -231,8 +229,8 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveGroup>> update(int priority, InteractiveGroup ... groups) {
-        return update(priority, groups != null ? Arrays.asList(groups) : Collections.emptyList());
+    public ListenableFuture<? extends Set<InteractiveGroup>> update(int priority, InteractiveGroup ... groups) {
+        return update(priority, groups != null ? Arrays.asList(groups) : new ArrayList<InteractiveGroup>());
     }
 
     /**
@@ -266,7 +264,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveGroup>> update(Collection<InteractiveGroup> groups) {
+    public ListenableFuture<? extends Set<InteractiveGroup>> update(Collection<InteractiveGroup> groups) {
         return update(0, groups);
     }
 
@@ -303,9 +301,9 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Set<InteractiveGroup>> update(int priority, Collection<InteractiveGroup> groups) {
+    public ListenableFuture<? extends Set<InteractiveGroup>> update(int priority, Collection<InteractiveGroup> groups) {
         if (groups == null) {
-            return CompletableFuture.completedFuture(Collections.emptySet());
+            return Futures.immediateFuture(new HashSet<InteractiveGroup>());
         }
 
         JsonObject jsonParams = new JsonObject();
@@ -342,7 +340,7 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> delete(String groupID) {
+    public ListenableFuture<Boolean> delete(String groupID) {
         return delete(groupID, DEFAULT_VALUE);
     }
 
@@ -376,9 +374,9 @@ public class GroupServiceProvider extends AbstractServiceProvider {
      *
      * @since   1.0.0
      */
-    public CompletableFuture<Boolean> delete(String groupID, String reassignGroupID) {
+    public ListenableFuture<Boolean> delete(String groupID, String reassignGroupID) {
         if (groupID == null || reassignGroupID == null) {
-            return CompletableFuture.completedFuture(false);
+            return Futures.immediateFuture(false);
         }
 
         JsonObject jsonGroup = new JsonObject();
