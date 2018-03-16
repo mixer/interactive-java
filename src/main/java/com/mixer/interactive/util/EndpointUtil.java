@@ -45,6 +45,9 @@ public class EndpointUtil {
     /**
      * Returns the first <code>InteractiveHost</code> returned from the API endpoint.
      *
+     * @param   clientId
+     *          The OAuth client id for the developer making this call
+     *
      * @return  The first <code>InteractiveHost</code> returned from the API endpoint
      *
      * @throws  InteractiveNoHostsFoundException
@@ -52,12 +55,15 @@ public class EndpointUtil {
      *
      * @since   1.0.0
      */
-    public static InteractiveHost getInteractiveHost() throws InteractiveNoHostsFoundException {
-        return getInteractiveHosts().get(0);
+    public static InteractiveHost getInteractiveHost(String clientId) throws InteractiveNoHostsFoundException {
+        return getInteractiveHosts(clientId).get(0);
     }
 
     /**
      * Returns a <code>List</code> of <code>InteractiveHosts</code> returned from the API endpoint.
+     *
+     * @param   clientId
+     *          The OAuth client id for the developer making this call
      *
      * @return  A <code>List</code> of <code>InteractiveHosts</code> returned from the API endpoint
      *
@@ -66,11 +72,13 @@ public class EndpointUtil {
      *
      * @since   1.0.0
      */
-    public static List<InteractiveHost> getInteractiveHosts() throws InteractiveNoHostsFoundException {
+    public static List<InteractiveHost> getInteractiveHosts(String clientId) throws InteractiveNoHostsFoundException {
 
         List<InteractiveHost> interactiveHosts;
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            interactiveHosts = httpClient.execute(new HttpGet(INTERACTIVE_HOST_DISCOVERY_ENDPOINT), response -> {
+            HttpGet httpGet = new HttpGet(INTERACTIVE_HOST_DISCOVERY_ENDPOINT);
+            httpGet.addHeader("Client-Id", clientId);
+            interactiveHosts = httpClient.execute(httpGet, response -> {
                 int status = response.getStatusLine().getStatusCode();
                 if (status >= 200 && status < 300) {
                     return GameClient.GSON.fromJson(EntityUtils.toString(response.getEntity()), INTERACTIVE_HOST_LIST_TYPE);

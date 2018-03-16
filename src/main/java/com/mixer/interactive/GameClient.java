@@ -160,6 +160,11 @@ public class GameClient {
     private final Number projectVersionId;
 
     /**
+     * The OAuth client id for the developer using this game client
+     */
+    private final String clientId;
+
+    /**
      * Service manager containing all server providers for the client
      */
     private final ServiceManager<AbstractServiceProvider> serviceManager;
@@ -189,11 +194,13 @@ public class GameClient {
      *
      * @param   projectVersionId
      *          The project version ID for the Interactive integration the client will use
+     * @param   clientId
+     *          The OAuth client id for the developer using this game client
      *
      * @since   1.0.0
      */
-    public GameClient(Number projectVersionId) {
-        this(projectVersionId, true);
+    public GameClient(Number projectVersionId, String clientId) {
+        this(projectVersionId, clientId, true);
     }
 
     /**
@@ -201,13 +208,16 @@ public class GameClient {
      *
      * @param   projectVersionId
      *          The project version ID for the Interactive integration the client will use
+     * @param   clientId
+     *          The OAuth client id for the developer using this game client
      * @param   useStateManager
      *          Whether or not to use built in caching for the game client
      *
      * @since   2.1.0
      */
-    public GameClient(Number projectVersionId, boolean useStateManager) {
+    public GameClient(Number projectVersionId, String clientId, boolean useStateManager) {
         this.projectVersionId = projectVersionId;
+        this.clientId = clientId;
 
         serviceManager = new ServiceManager<>(this);
         registerServiceProviders();
@@ -357,7 +367,7 @@ public class GameClient {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         ArrayList<InteractiveHost> hosts = new ArrayList<>();
         try {
-            hosts.addAll(EndpointUtil.getInteractiveHosts());
+            hosts.addAll(EndpointUtil.getInteractiveHosts(clientId));
         } catch (InteractiveNoHostsFoundException e) {
             result.completeExceptionally(e);
         }
@@ -461,7 +471,7 @@ public class GameClient {
      * @since   1.0.0
      */
     private void connect(String authToken, String shareCode, URI hostURI) throws InteractiveNoHostsFoundException {
-        URI interactiveHost = hostURI != null ? hostURI : EndpointUtil.getInteractiveHost().getAddress();
+        URI interactiveHost = hostURI != null ? hostURI : EndpointUtil.getInteractiveHost(clientId).getAddress();
         String token = authToken != null ? authToken : "";
 
         if (shareCode != null && !shareCode.isEmpty()) {
