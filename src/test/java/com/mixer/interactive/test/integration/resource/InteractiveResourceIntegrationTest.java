@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.resources.group.InteractiveGroup;
 import com.mixer.interactive.test.util.TestEventHandler;
+import com.mixer.interactive.test.util.TestUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -35,7 +36,7 @@ public class InteractiveResourceIntegrationTest {
 
     @Before
     public void setupGameClient() {
-        gameClient = new GameClient(INTERACTIVE_PROJECT_ID);
+        gameClient = new GameClient(INTERACTIVE_PROJECT_ID, TestUtils.CLIENT_ID);
         gameClient.getEventBus().register(TestEventHandler.HANDLER);
     }
 

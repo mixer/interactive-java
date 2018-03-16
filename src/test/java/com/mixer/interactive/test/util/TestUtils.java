@@ -67,6 +67,11 @@ public class TestUtils {
     private static final URI INTERACTIVE_LOCALHOST = URI.create("ws://localhost:3000/gameClient");
 
     /**
+     * Test client id
+     */
+    public static final String CLIENT_ID = "clientId";
+
+    /**
      * The URI of the Interactive service used for testing
      */
     public static final URI INTERACTIVE_SERVICE_URI;
@@ -125,7 +130,7 @@ public class TestUtils {
             else {
                 URI serviceHost;
                 try {
-                    serviceHost = EndpointUtil.getInteractiveHost().getAddress();
+                    serviceHost = EndpointUtil.getInteractiveHost(CLIENT_ID).getAddress();
                 }
                 catch (InteractiveNoHostsFoundException e) {
                     serviceHost = INTERACTIVE_LOCALHOST;

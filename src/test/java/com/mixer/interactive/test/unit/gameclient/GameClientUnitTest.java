@@ -1,6 +1,7 @@
 package com.mixer.interactive.test.unit.gameclient;
 
 import com.mixer.interactive.GameClient;
+import com.mixer.interactive.test.util.TestUtils;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -21,7 +22,7 @@ public class GameClientUnitTest {
     /**
      * The <code>GameClient</code> that this test will use
      */
-    private static GameClient gameClient = new GameClient(PROJECT_VERSION_ID);
+    private static GameClient gameClient = new GameClient(PROJECT_VERSION_ID, TestUtils.CLIENT_ID);
 
     @Test
     public void testProjectVersionID() {

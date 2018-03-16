@@ -1,6 +1,7 @@
 package com.mixer.interactive.test.integration.manager;
 
 import com.mixer.interactive.GameClient;
+import com.mixer.interactive.test.util.TestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.*;
@@ -32,7 +33,7 @@ public class StateManagerIntegrationTests {
 
     @Before
     public void setup_test() {
-        gameClient = new GameClient(INTERACTIVE_PROJECT_ID);
+        gameClient = new GameClient(INTERACTIVE_PROJECT_ID, TestUtils.CLIENT_ID);
     }
 
     @After

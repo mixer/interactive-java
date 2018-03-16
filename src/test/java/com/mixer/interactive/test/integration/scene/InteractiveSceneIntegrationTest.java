@@ -46,7 +46,7 @@ public class InteractiveSceneIntegrationTest {
 
     @Before
     public void setupGameClient() {
-        gameClient = new GameClient(INTERACTIVE_PROJECT_ID);
+        gameClient = new GameClient(INTERACTIVE_PROJECT_ID, TestUtils.CLIENT_ID);
         gameClient.getEventBus().register(TestEventHandler.HANDLER);
     }
 

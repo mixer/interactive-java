@@ -2,6 +2,7 @@ package com.mixer.interactive.test.unit.services;
 
 import com.mixer.interactive.GameClient;
 import com.mixer.interactive.services.AbstractServiceProvider;
+import com.mixer.interactive.test.util.TestUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -23,7 +24,7 @@ public class ServiceManagerUnitTest {
     /**
      * The <code>GameClient</code> that this test will use
      */
-    private static GameClient gameClient = new GameClient(PROJECT_VERSION_ID);
+    private static GameClient gameClient = new GameClient(PROJECT_VERSION_ID, TestUtils.CLIENT_ID);
 
     @Before
     public void setup() {
