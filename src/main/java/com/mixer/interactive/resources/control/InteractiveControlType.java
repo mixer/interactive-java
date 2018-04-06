@@ -11,7 +11,9 @@ package com.mixer.interactive.resources.control;
  */
 public enum InteractiveControlType {
     BUTTON("button"),
-    JOYSTICK("joystick");
+    JOYSTICK("joystick"),
+    LABEL("label"),
+    TEXTBOX("textbox");
 
     /**
      * Array of all <code>InteractiveControlType</code> enum values

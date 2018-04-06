@@ -47,6 +47,37 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
     private Long cooldown;
 
     /**
+     * The size of text on the button.
+     */
+    private int textSize;
+
+    /**
+     * Color of text on the button.
+     */
+    private String textColor;
+
+    /**
+     * Accent color of the button.
+     */
+    private String accentColor;
+
+    /**
+     * Focus color of the button.
+     */
+    private String focusColor;
+
+    /**
+     * Color of the border of the button.
+     */
+    private String borderColor;
+
+    /**
+     * Button's background color.
+
+     */
+    private String backgroundColor;
+
+    /**
      * Initializes a new <code>ButtonControl</code>.
      *
      * @param   controlID
@@ -264,6 +295,162 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
     }
 
     /**
+     * Returns the text size of the text for this <code>ButtonControl</code>.
+     *
+     * @return  The text size of the text for this <code>ButtonControl</code>.
+     *
+     * @since   3.1.0
+     */
+    public int getTextSize() {
+        return textSize;
+    }
+
+    /**
+     * Sets the text size for this <code>ButtonControl</code>.
+     *
+     * @param   size
+     *          The size of this <code>ButtonControl</code>'s text.
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   3.1.0
+     */
+    public ButtonControl setTextSize(int size) {
+        this.textSize = size;
+        return this;
+    }
+
+    /**
+     * Returns the text color of this <code>ButtonControl</code>.
+     *
+     * @return  The text color of this <code>ButtonControl</code>.
+     *
+     * @since   3.1.0
+     */
+    public String getTextColor() {
+        return textColor;
+    }
+
+    /**
+     * Sets the text color for this <code>ButtonControl</code>.
+     *
+     * @param   color
+     *          The color of this <code>ButtonControl</code>'s text.
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   3.1.0
+     */
+    public ButtonControl setTextColor(String color) {
+        this.textColor = color;
+        return this;
+    }
+
+    /**
+     * Returns the accent color of this <code>ButtonControl</code>.
+     *
+     * @return  The accent color of this <code>ButtonControl</code>.
+     *
+     * @since   3.1.0
+     */
+    public String getAccentColor() {
+        return accentColor;
+    }
+
+    /**
+     * Sets the accent color for this <code>ButtonControl</code>.
+     *
+     * @param   color
+     *          The accent color of this <code>ButtonControl</code>.
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   3.1.0
+     */
+    public ButtonControl setAccentColor(String color) {
+        this.accentColor = color;
+        return this;
+    }
+
+    /**
+     * Returns the focus color of this <code>ButtonControl</code>.
+     *
+     * @return  The focus color of this <code>ButtonControl</code>.
+     *
+     * @since   3.1.0
+     */
+    public String getFocusColor() {
+        return focusColor;
+    }
+
+    /**
+     * Sets the focus color for this <code>ButtonControl</code>.
+     *
+     * @param   color
+     *          The focus color of this <code>ButtonControl</code>.
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   3.1.0
+     */
+    public ButtonControl setFocusColor(String color) {
+        this.focusColor = color;
+        return this;
+    }
+
+    /**
+     * Returns the border color of this <code>ButtonControl</code>.
+     *
+     * @return  The border color of this <code>ButtonControl</code>.
+     *
+     * @since   3.1.0
+     */
+    public String getBorderColor() {
+        return borderColor;
+    }
+
+    /**
+     * Sets the border color for this <code>ButtonControl</code>.
+     *
+     * @param   color
+     *          The border color of this <code>ButtonControl</code>.
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   3.1.0
+     */
+    public ButtonControl setBorderColor(String color) {
+        this.borderColor = color;
+        return this;
+    }
+
+    /**
+     * Returns the background color of this <code>ButtonControl</code>.
+     *
+     * @return  The background color of this <code>ButtonControl</code>.
+     *
+     * @since   3.1.0
+     */
+    public String getBackgroundColor() {
+        return backgroundColor;
+    }
+
+    /**
+     * Sets the background color for this <code>ButtonControl</code>.
+     *
+     * @param   color
+     *          The background color of this <code>ButtonControl</code>.
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   3.1.0
+     */
+    public ButtonControl setBackgroundColor(String color) {
+        this.backgroundColor = color;
+        return this;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @see     InteractiveResource#getThis()
@@ -301,6 +488,12 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
                     this.cost = ((ButtonControl) o).cost;
                     this.progress = ((ButtonControl) o).progress;
                     this.cooldown = ((ButtonControl) o).cooldown;
+                    this.accentColor = ((ButtonControl) o).accentColor;
+                    this.backgroundColor = ((ButtonControl) o).backgroundColor;
+                    this.borderColor = ((ButtonControl) o).borderColor;
+                    this.focusColor = ((ButtonControl) o).focusColor;
+                    this.textColor = ((ButtonControl) o).textColor;
+                    this.textSize = ((ButtonControl) o).textSize;
                     return true;
                 }
             }
