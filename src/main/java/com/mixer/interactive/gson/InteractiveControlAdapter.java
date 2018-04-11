@@ -1,9 +1,7 @@
 package com.mixer.interactive.gson;
 
 import com.google.gson.*;
-import com.mixer.interactive.resources.control.ButtonControl;
-import com.mixer.interactive.resources.control.InteractiveControl;
-import com.mixer.interactive.resources.control.JoystickControl;
+import com.mixer.interactive.resources.control.*;
 
 import java.lang.reflect.Type;
 
@@ -27,11 +25,15 @@ public class InteractiveControlAdapter implements JsonSerializer<InteractiveCont
     @Override
     public InteractiveControl deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
         if (json.isJsonObject() && ((JsonObject) json).has("kind")) {
-            if (((JsonObject) json).get("kind").getAsString().equals("button")) {
-                return context.deserialize(json, ButtonControl.class);
-            }
-            else if (((JsonObject) json).get("kind").getAsString().equals("joystick")) {
-                return context.deserialize(json, JoystickControl.class);
+            switch (((JsonObject) json).get("kind").getAsString()) {
+                case "button":
+                    return context.deserialize(json, ButtonControl.class);
+                case "joystick":
+                    return context.deserialize(json, JoystickControl.class);
+                case "label":
+                    return context.deserialize(json, LabelControl.class);
+                case "textbox":
+                    return context.deserialize(json, TextboxControl.class);
             }
         }
         return null;
@@ -53,6 +55,12 @@ public class InteractiveControlAdapter implements JsonSerializer<InteractiveCont
         }
         else if (src instanceof JoystickControl) {
             return context.serialize(src, JoystickControl.class);
+        }
+        else if (src instanceof LabelControl) {
+            return context.serialize(src, LabelControl.class);
+        }
+        else if (src instanceof TextboxControl) {
+            return context.serialize(src, TextboxControl.class);
         }
         else {
             return context.serialize(src);
