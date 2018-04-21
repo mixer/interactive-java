@@ -73,9 +73,13 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
 
     /**
      * Button's background color.
-
      */
     private String backgroundColor;
+
+    /**
+     * Button's background image.
+     */
+    private String backgroundImage;
 
     /**
      * Initializes a new <code>ButtonControl</code>.
@@ -451,6 +455,32 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
     }
 
     /**
+     * Returns the background image of this <code>ButtonControl</code>.
+     *
+     * @return  The background image of this <code>ButtonControl</code>.
+     *
+     * @since   3.1.1
+     */
+    public String getBackgroundImage() {
+        return backgroundImage;
+    }
+
+    /**
+     * Sets the background image for this <code>ButtonControl</code>.
+     *
+     * @param   image
+     *          The background image of this <code>ButtonControl</code>.
+     *
+     * @return  <code>this</code> for method chaining
+     *
+     * @since   3.1.1
+     */
+    public ButtonControl setBackgroundImage(String image) {
+        this.backgroundImage = image;
+        return this;
+    }
+
+    /**
      * {@inheritDoc}
      *
      * @see     InteractiveResource#getThis()
@@ -494,6 +524,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
                     this.focusColor = ((ButtonControl) o).focusColor;
                     this.textColor = ((ButtonControl) o).textColor;
                     this.textSize = ((ButtonControl) o).textSize;
+                    this.backgroundImage = ((ButtonControl) o).backgroundImage;
                     return true;
                 }
             }
