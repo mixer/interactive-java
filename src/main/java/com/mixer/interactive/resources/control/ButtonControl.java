@@ -459,7 +459,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      *
      * @return  The background image of this <code>ButtonControl</code>.
      *
-     * @since   3.1.1
+     * @since   3.2.0
      */
     public String getBackgroundImage() {
         return backgroundImage;
@@ -473,7 +473,7 @@ public class ButtonControl extends InteractiveControl<ButtonControl> {
      *
      * @return  <code>this</code> for method chaining
      *
-     * @since   3.1.1
+     * @since   3.2.0
      */
     public ButtonControl setBackgroundImage(String image) {
         this.backgroundImage = image;
