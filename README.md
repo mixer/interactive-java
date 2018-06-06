@@ -39,7 +39,7 @@ Next, add this project as a `dependency` in your `pom.xml`:
   <dependency>
     <groupId>com.mixer</groupId>
     <artifactId>mixer-interactive-api</artifactId>
-    <version>2.1.0</version>
+    <version>3.2.0</version>
   </dependency>
 </dependencies>
 ```
