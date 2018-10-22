@@ -14,6 +14,8 @@ Javadoc for the SDK is available [here](https://mixer.github.io/interactive-java
 
 ## Development
 
+### Maven
+
 We use [Maven](http://maven.apache.org/) to build the client.  Once you have [Maven installed](http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html), there are two easy steps to getting the
 client in your classpath.
 
@@ -42,6 +44,29 @@ Next, add this project as a `dependency` in your `pom.xml`:
     <version>3.2.0</version>
   </dependency>
 </dependencies>
+```
+
+Once these steps are completed, you should have the client on your classpath, and are set to get programming!
+
+### Gradle
+
+You can also use [Gradle](https://gradle.org/) to build the client. Once you have [installed Gradle](https://gradle.org/install/), there are two things you have to add to your `build.gradle` file.
+
+First add the [Mixer repo](https://maven.mixer.com) as a `repository` in your `build.gradle`:
+
+```groovy
+repositories {
+  maven {
+    url 'https://maven.mixer.com'
+  }
+}
+```
+
+Next, add this project as a `dependency` in your `build.gradle` using the `implementation` configuration:
+```groovy
+dependencies {
+  implementation 'com.mixer:mixer-interactive-api:3.2.0'
+}
 ```
 
 Once these steps are completed, you should have the client on your classpath, and are set to get programming!
